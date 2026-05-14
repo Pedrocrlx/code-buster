@@ -3,7 +3,7 @@ name = "code-buster"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.14"
 dependencies = [
     "crewai>=0.5.0",
     "fastapi[standard]>=0.128.8",
