@@ -1,8 +1,11 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/docker-in-docker
+
+// Devcontainer configuration enabling Docker access for development.
+// This config uses the docker-in-docker feature and binds the host Docker socket
+// so tools inside the container can run `docker` and `docker compose`.
+
+// Devcontainer so we have a docker inside a docker, 
 {
 	"name": "Docker in Docker",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	"image": "mcr.microsoft.com/devcontainers/base:bullseye",
 
 	"features": {
@@ -11,11 +14,16 @@
 			"enableNonRootDocker": "true",
 			"moby": "true"
 		},
-		"ghcr.io/devcontainer-community/devcontainer-features/astral.sh-uv:1": {
-			"shellautocompletion": true,
-			"version": "latest"
-		}
+		"ghcr.io/devcontainer-community/devcontainer-features/astral.sh-uv:1": {}
 	},
+
+
+	// Binds the local/host Docker socket into the container so the container's Docker CLI talks to the host daemon at `/var/run/docker.sock`. This is usually safer and faster than running a full daemon inside the container.
+	// THis fixes the error "Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?" when trying to run `docker` commands inside the container.
+	// It happens because the container doesn't have its own Docker daemon running, but by mounting the host's Docker socket, it can use the host's Docker daemon to execute commands.
+	"mounts": [
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
