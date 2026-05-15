@@ -1,1 +1,13 @@
+# Stop searching for .editorconfig files in parent directories
 root = true
+
+## Identation style spaces
+
+[*.py]
+indent_style = space
+indent_size = 4
+
+# Apply LF line endings to all files
+[*]
+end_of_line = lf
+insert_final_newline = true

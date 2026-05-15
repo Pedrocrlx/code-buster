@@ -8,9 +8,19 @@ dependencies = [
     "crewai>=0.5.0",
     "fastapi[standard]>=0.128.8",
     "httpx>=0.28.1",
+    "sqlmodel>=0.0.38",
     "typer>=0.23.1",
     "uvicorn>=0.39.0",
 ]
+
+[tool.ruff.lint]
+select = ["E", "F"]
+ignore = ["F401"]
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+line-ending = "lf"
 
 [dependency-groups]
 dev = [
