@@ -1,4 +1,26 @@
+# Python
 __pycache__/
-.ruff_cache/
+*.py[cod]
+*.pyo
 .venv/
+*.egg-info/
+dist/
+build/
+
+# Environment & secrets
 .env
+.env.*
+!.env.example
+
+# Tools
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# Claude Code
+.claude/
+settings.json
+
+# OS
+.DS_Store
+Thumbs.db
