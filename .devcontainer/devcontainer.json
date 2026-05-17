@@ -28,8 +28,8 @@
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "docker --version",
+	// Installs Ollama and all Python deps so the container is ready to use after rebuild.
+	"postCreateCommand": "apt-get update -qq && apt-get install -y zstd && curl -fsSL https://ollama.com/install.sh | sh && uv sync",
 
 	// Configure tool-specific properties.
 	// "customizations": {},
