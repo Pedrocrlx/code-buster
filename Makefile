@@ -1,22 +1,14 @@
-.PHONY: up down clean serve pull ollama ruff
+.PHONY: serve-model stop-model pull-model agent ruff
 
-up: # Build and start the containers
-	docker compose up --build
+run-model: # Starts Ollama via Docker. Pulls the model if not present.
+	docker rm -f ollama 2>/dev/null; docker run -d --name ollama -p 11434:11434 -v ollama_data:/root/.ollama ollama/ollama
+	docker exec ollama ollama list | grep -q "qwen2.5:0.5b" || docker exec ollama ollama pull qwen2.5:0.5b
 
-down: # Stop the containers
-	docker compose down
+stop-model: # Stop and remove the Ollama container
+	docker rm -f ollama
 
-clean: # Stop the containers and remove volumes and orphan containers
-	docker compose down -v --remove-orphans
-
-serve: # Start the Ollama daemon (keep this running in a separate terminal)
-	ollama serve
-
-pull: # Pull the required model — requires make serve to be running
-	ollama pull qwen2.5:1.5b
-
-ollama: # Run the AI agent script — requires make serve to be running
+agent: # Run the AI agent
 	uv run python config/ai/ai.py
 
-ruff: # Lint and format the codebase
+ruff: # Lint and format
 	uv run ruff check . && uv run ruff format .
