@@ -1,0 +1,2 @@
+[console_scripts]
+buster = main:app
