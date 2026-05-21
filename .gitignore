@@ -5,3 +5,6 @@ __pycache__/
 
 # Ignore the .buster directory, which is used for storing the tool's configuration and data.
 .buster/
+.claude/
+models/
+buster/output/

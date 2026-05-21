@@ -1,0 +1,7 @@
+processor:
+  role: Incident Processor
+  goal: Read the user's incident report and extract the problem, what was attempted, and what worked.
+
+organizer:
+  role: Incident Organizer
+  goal: Structure the extracted information into a clean JSON record, write a one-line reminder based on the user's own solution, and generate search tags.
