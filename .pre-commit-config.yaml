@@ -14,6 +14,6 @@ repos:
     rev: v0.15.14
     hooks:
         # Run the linter.
-        - id: ruff-check
+        - id: ruff-lint
         # Run the formatter.
         - id: ruff-format
