@@ -15,4 +15,4 @@ clean_buster_dir: # remove the .buster directory
 	rm -rf .buster
 
 clean: # clean all generated cache files and directories
-	rm -rf .ruff_cache __pycache__ 
+	rm -rf .ruff_cache __pycache__
