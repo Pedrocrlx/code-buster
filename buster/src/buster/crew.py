@@ -15,7 +15,7 @@ class IncidentEntry(BaseModel):
 
 
 @CrewBase
-class Buster():
+class Buster:
     """Buster crew"""
 
     agents: list[BaseAgent]
@@ -25,29 +25,29 @@ class Buster():
     @agent
     def processor(self) -> Agent:
         return Agent(
-            config=self.agents_config['processor'], # type: ignore[index]
+            config=self.agents_config["processor"],  # type: ignore[index]
             llm=local_model,
-            verbose=False
+            verbose=False,
         )
 
     @agent
     def organizer(self) -> Agent:
         return Agent(
-            config=self.agents_config['organizer'], # type: ignore[index]
+            config=self.agents_config["organizer"],  # type: ignore[index]
             llm=local_model,
-            verbose=False
+            verbose=False,
         )
 
     @task
     def process(self) -> Task:
         return Task(
-            config=self.tasks_config['process'], # type: ignore[index]
+            config=self.tasks_config["process"],  # type: ignore[index]
         )
 
     @task
     def organise(self) -> Task:
         return Task(
-            config=self.tasks_config['organise'], # type: ignore[index]
+            config=self.tasks_config["organise"],  # type: ignore[index]
             output_pydantic=IncidentEntry,
         )
 

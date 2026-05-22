@@ -55,6 +55,5 @@ This project was built with assistance from **Claude Code (Anthropic)** througho
 
 CrewAI agent design: Designing and iterating on the agent pipeline (from 4 agents down to 2), defining roles, goals, and task descriptions in YAML
 CLI implementation: Building the interactive prompt flow, spinner animation with threading, and structured JSON output |
-Refactoring: Decision in dead scaffolding, and simplifying the agent architecture 
+Refactoring: Decision in dead scaffolding, and simplifying the agent architecture
 Documentation: Scaffolding this README, and then manually editing it for clarity and completeness.
-

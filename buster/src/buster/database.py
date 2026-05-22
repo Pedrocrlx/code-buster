@@ -27,14 +27,16 @@ def save_bust(data: dict) -> int:
     params = {
         **data,
         "attempted_solutions": json.dumps(data["attempted_solutions"]),
-        "tags":                json.dumps(data["tags"]),
-        "resolved":            int(data["resolved"]),
-        "created_at":          datetime.now().isoformat(),
+        "tags": json.dumps(data["tags"]),
+        "resolved": int(data["resolved"]),
+        "created_at": datetime.now().isoformat(),
     }
     with sqlite3.connect(DB_PATH) as connection:
         cursor = connection.execute(
-            """INSERT INTO busts (title, problem, attempted_solutions, lesson, tags, resolved, created_at)
-               VALUES (:title, :problem, :attempted_solutions, :lesson, :tags, :resolved, :created_at)""",
-            params
+            """INSERT INTO busts (title, problem, attempted_solutions,
+            lesson, tags, resolved, created_at)
+               VALUES (:title, :problem, :attempted_solutions, :lesson,
+            :tags, :resolved, :created_at)""",
+            params,
         )
         return cursor.lastrowid
