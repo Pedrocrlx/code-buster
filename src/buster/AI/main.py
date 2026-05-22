@@ -4,8 +4,8 @@ import io
 import sys
 import threading
 import time
-from buster.crew import Buster
-from buster.database import save_bust
+from crew import Buster
+from database import save_bust
 
 
 def visual_loading(messages: list[str]):
