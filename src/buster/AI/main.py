@@ -103,3 +103,7 @@ def run():
 
     bust_id = save_bust(data)
     print(f"Eveything Processed & Bust Saved! (Bust #{bust_id})")
+
+
+if __name__ == "__main__":
+    run()

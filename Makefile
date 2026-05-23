@@ -29,4 +29,4 @@ stop-model: # Stop the Ollama container
 	docker compose stop ollama
 
 bust: # Run the Root Cause Analyst (prompts for incident description)
-	cd buster && uv run buster
+	cd src/buster/AI && uv run main.py

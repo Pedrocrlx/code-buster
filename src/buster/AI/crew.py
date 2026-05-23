@@ -59,4 +59,5 @@ class Buster:
             process=Process.sequential,
             verbose=False,
             task_callback=self._task_callback,
+            tracing=False,
         )

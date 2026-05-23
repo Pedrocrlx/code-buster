@@ -20,7 +20,7 @@ quote-style = "double"
 line-ending = "lf"
 
 [project.scripts]
-buster = "main:app"
+buster = "main:run"
 
 [dependency-groups]
 dev = [
