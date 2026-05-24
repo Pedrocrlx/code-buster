@@ -1,6 +1,6 @@
 import json
 import sqlite3
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent.parent / "busts.db"
@@ -20,6 +20,32 @@ def init_db() -> None:
                 created_at          TEXT NOT NULL
             )
         """)
+
+
+def fetch_all_busts() -> str:
+    init_db()
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            "SELECT * FROM busts ORDER BY created_at DESC"
+        ).fetchall()
+    if not rows:
+        return "No past incidents found."
+    parts = []
+    for row in rows:
+        solutions = ", ".join(json.loads(row["attempted_solutions"]))
+        tags = ", ".join(json.loads(row["tags"]))
+        resolved = "yes" if row["resolved"] else "no"
+        parts.append(
+            f"#{row['id']} — {row['title']}\n"
+            f"Date: {row['created_at']}\n"
+            f"Problem: {row['problem']}\n"
+            f"Solutions tried: {solutions}\n"
+            f"Lesson: {row['lesson']}\n"
+            f"Tags: {tags}\n"
+            f"Resolved: {resolved}"
+        )
+    return "\n---\n".join(parts)
 
 
 def save_bust(data: dict) -> int:

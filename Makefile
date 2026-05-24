@@ -30,3 +30,6 @@ stop-model: # Stop the Ollama container
 
 bust: # Run the Root Cause Analyst (prompts for incident description)
 	cd src/buster/AI && uv run main.py
+
+recall: # Search past incidents for a similar problem
+	cd src/buster/AI && uv run recall.py

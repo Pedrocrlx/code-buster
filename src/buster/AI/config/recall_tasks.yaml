@@ -1,0 +1,39 @@
+search:
+  description: >
+    A developer is facing this problem:
+
+    {query}
+
+    Here are all past incidents from the knowledge base:
+
+    {busts}
+
+    Your job is to find incidents that are directly about the same technical topic as the developer's problem.
+    Match on the actual subject — for example, if the problem is about database connections, only return incidents
+    about databases. Do NOT return incidents about unrelated topics even if they share a general theme like "errors" or "functionality".
+    Do NOT invent or paraphrase incidents — copy their details exactly as written.
+    If nothing in the knowledge base is about the same topic, say exactly: "No relevant incidents found."
+  expected_output: >
+    The full details of every directly relevant past incident, copied word-for-word from the knowledge base.
+    Include title, date, problem, solutions tried, lesson, tags, and resolved status.
+    If no incidents match the topic, say exactly: "No relevant incidents found."
+  agent: searcher
+
+narrate:
+  description: >
+    Using only the matched incidents provided by the searcher, write a short conversational summary for the developer.
+
+    Rules:
+    - If the searcher said "No relevant incidents found", reply only with: "Nothing similar in your knowledge base yet."
+    - Otherwise, for each matched incident write 2-3 sentences: what the problem was, what was tried, and what worked.
+    - Use natural language. Do NOT include raw incident data, structured fields, bullet points, or any copied text from the record.
+    - Do NOT invent details that are not in the matched incidents.
+    - Do NOT mention anything about incidents that were not matched.
+  expected_output: >
+    A short conversational paragraph per matched incident. Plain prose only — no raw data, no bullet points, no field names.
+    Example: "You had a Docker networking issue yesterday — the container couldn't reach the host. You tried restarting
+    the daemon and switching network modes, and host networking is what fixed it."
+    If nothing matched, say only: "Nothing similar in your knowledge base yet."
+  agent: narrator
+  context:
+    - search
