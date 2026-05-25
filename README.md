@@ -112,7 +112,7 @@ make test
 
 This project was built with assistance from **Claude Code (Anthropic)** throughout the development process.
 
-| Area | How it was used |
+| Area | Context | Tool | How it was used |
 |---|---|
 | CrewAI agent design | Designing and iterating on the agent pipeline, defining roles, goals, and task descriptions in YAML |
 | CLI implementation | Building the interactive prompt flow, spinner animation with threading |

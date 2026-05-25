@@ -6,22 +6,7 @@ import threading
 import time
 from datetime import date
 from crew import Recall
-from database import search_by_tags
-
-_STOP_WORDS = {
-    "a", "an", "the", "is", "it", "my", "i", "am", "are", "was", "were",
-    "have", "has", "had", "do", "does", "did", "in", "on", "at", "to", "for",
-    "of", "and", "or", "but", "with", "not", "no", "by", "be", "been",
-    "from", "as", "up", "out", "this", "that", "which", "who", "what",
-    "how", "why", "when", "where", "can", "will", "would", "could", "should",
-    "may", "might", "shall", "about", "into", "something", "getting", "keeps",
-    "keep", "seems", "seem", "happening", "happen", "trying", "try", "using",
-    "still", "just", "some", "also", "then", "than", "too", "very", "its",
-}
-
-
-def extract_keywords(query: str) -> list[str]:
-    return [w for w in query.lower().split() if w not in _STOP_WORDS and len(w) > 2]
+from database import extract_keywords, search_by_tags
 
 
 def filter_busts(query: str) -> str:
@@ -79,8 +64,7 @@ def run():
 
     print()
     on_task_done, finish = visual_loading([
-        "Searching your knowledge base",
-        "Putting it into words",
+        "Searching your knowledge base and putting it into words",
     ])
 
     recall = Recall()

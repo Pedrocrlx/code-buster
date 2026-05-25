@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 import contextlib
 import io
+import re
 import sys
 import threading
 import time
+from datetime import datetime
+from pathlib import Path
 from crew import Buster
-from database import save_bust
+
+BUSTS_DIR = Path(__file__).parent.parent.parent.parent / "busts"
 
 
 def visual_loading(messages: list[str]):
@@ -98,11 +102,29 @@ def run():
     finish()
 
     data = result.pydantic.model_dump()
-
     data["resolved"] = resolved in ("yes", "y")
 
-    bust_id = save_bust(data)
-    print(f"Eveything Processed & Bust Saved! (Bust #{bust_id})")
+    BUSTS_DIR.mkdir(parents=True, exist_ok=True)
+    slug = re.sub(r"[^a-z0-9]+", "_", data["title"].lower()).strip("_")[:40]
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = BUSTS_DIR / f"bust_{timestamp}_{slug}.md"
+
+    resolved_str = "yes" if data["resolved"] else "no"
+    solutions_md = "\n".join(f"- {s}" for s in data["attempted_solutions"])
+    tags_str = ", ".join(data["tags"])
+
+    md = (
+        f"# {data['title']}\n\n"
+        f"**Resolved:** {resolved_str}\n\n"
+        f"## Problem\n{data['problem']}\n\n"
+        f"## Solutions Tried\n{solutions_md}\n\n"
+        f"## Lesson\n{data['lesson']}\n\n"
+        f"## Tags\n{tags_str}\n"
+    )
+
+    filename.write_text(md)
+    print(f"\nBust saved to: {filename.relative_to(Path.cwd()) if filename.is_relative_to(Path.cwd()) else filename}")
+    print("Review and edit it, then run: make save FILE=<path>")
 
 
 if __name__ == "__main__":

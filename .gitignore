@@ -9,3 +9,5 @@ __pycache__/
 models/
 buster/output/
 *.db
+
+busts/

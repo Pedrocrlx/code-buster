@@ -5,6 +5,21 @@ from pathlib import Path
 
 DB_PATH = Path(__file__).parent.parent.parent / "busts.db"
 
+_STOP_WORDS = {
+    "a", "an", "the", "is", "it", "my", "i", "am", "are", "was", "were",
+    "have", "has", "had", "do", "does", "did", "in", "on", "at", "to", "for",
+    "of", "and", "or", "but", "with", "not", "no", "by", "be", "been",
+    "from", "as", "up", "out", "this", "that", "which", "who", "what",
+    "how", "why", "when", "where", "can", "will", "would", "could", "should",
+    "may", "might", "shall", "about", "into", "something", "getting", "keeps",
+    "keep", "seems", "seem", "happening", "happen", "trying", "try", "using",
+    "still", "just", "some", "also", "then", "than", "too", "very", "its",
+}
+
+
+def extract_keywords(text: str) -> list[str]:
+    return [w for w in text.lower().split() if w not in _STOP_WORDS and len(w) > 2]
+
 
 def init_db() -> None:
     with sqlite3.connect(DB_PATH) as connection:
@@ -66,7 +81,7 @@ def search_by_tags(keywords: list[str]) -> str:
         tags = json.loads(row["tags"])
         hits = sum(
             1 for kw in keywords
-            if any(kw in tag or tag in kw for tag in tags)
+            if any(kw in tag.lower() or tag.lower() in kw for tag in tags)
         )
         if hits >= threshold:
             solutions = ", ".join(json.loads(row["attempted_solutions"]))
@@ -84,10 +99,16 @@ def search_by_tags(keywords: list[str]) -> str:
 
 def save_bust(data: dict) -> int:
     init_db()
+    # Merge model-generated tags with keywords extracted from title and problem
+    # so recall can find busts by the words users naturally type
+    # Normalise model tags: split underscored compounds into individual words
+    normalised = [w for tag in data["tags"] for w in tag.replace("_", " ").split()]
+    extra = extract_keywords(f"{data['title']} {data['problem']}")
+    merged_tags = list(dict.fromkeys(normalised + extra))  # dedup, preserve order
     params = {
         **data,
         "attempted_solutions": json.dumps(data["attempted_solutions"]),
-        "tags": json.dumps(data["tags"]),
+        "tags": json.dumps(merged_tags),
         "resolved": int(data["resolved"]),
         "created_at": datetime.now().isoformat(),
     }

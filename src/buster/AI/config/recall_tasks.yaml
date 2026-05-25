@@ -1,28 +1,15 @@
-search:
+narrate:
   description: >
     The developer's query: {query}
 
-    Pre-filtered incidents from the knowledge base:
+    Past incidents retrieved from the knowledge base:
 
     {matches}
 
     Today's date is {today}.
 
-    Copy the incidents above into your response exactly as written.
-    If the text says "No relevant incidents found.", copy that exact phrase and nothing else.
-    Do not add, remove, or change a single word.
-  expected_output: >
-    The incidents copied exactly as provided, or the phrase "No relevant incidents found." if none were given.
-  agent: searcher
-
-narrate:
-  description: >
-    Using only the confirmed incidents from the searcher, write a short conversational summary for the developer.
-
-    Today's date is {today}.
-
     Rules:
-    - If the searcher said "No relevant incidents found", reply only with: "Nothing similar in your knowledge base yet."
+    - If the incidents text says "No relevant busts found.", reply only with: "Nothing similar in your knowledge base yet."
     - Otherwise, for each incident write 2-3 sentences: what the problem was, what was tried, and what worked.
     - Use natural language. Do NOT include raw incident data, structured fields, bullet points, or copied text.
     - Do NOT invent details that are not in the incidents.
@@ -32,5 +19,3 @@ narrate:
     checking the config, and mounting the Docker socket from the host is what fixed it."
     If nothing matched, say only: "Nothing similar in your knowledge base yet."
   agent: narrator
-  context:
-    - search
