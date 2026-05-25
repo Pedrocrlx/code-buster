@@ -3,7 +3,11 @@ from crewai import LLM, Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 
-local_model = LLM(model="ollama/qwen2.5:1.5b", base_url="http://localhost:11434")
+local_model = LLM(
+    model="ollama/qwen2.5:1.5b",
+    base_url="http://localhost:11434",
+    temperature=0.2,  # lower = more focused/deterministic output
+)
 
 
 class IncidentEntry(BaseModel):

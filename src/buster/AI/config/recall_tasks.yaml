@@ -1,38 +1,35 @@
 search:
   description: >
-    A developer is facing this problem:
+    The developer's query: {query}
 
-    {query}
+    Pre-filtered incidents from the knowledge base:
 
-    Here are all past incidents from the knowledge base:
+    {matches}
 
-    {busts}
+    Today's date is {today}.
 
-    Your job is to find incidents that are directly about the same technical topic as the developer's problem.
-    Match on the actual subject — for example, if the problem is about database connections, only return incidents
-    about databases. Do NOT return incidents about unrelated topics even if they share a general theme like "errors" or "functionality".
-    Do NOT invent or paraphrase incidents — copy their details exactly as written.
-    If nothing in the knowledge base is about the same topic, say exactly: "No relevant incidents found."
+    Copy the incidents above into your response exactly as written.
+    If the text says "No relevant incidents found.", copy that exact phrase and nothing else.
+    Do not add, remove, or change a single word.
   expected_output: >
-    The full details of every directly relevant past incident, copied word-for-word from the knowledge base.
-    Include title, date, problem, solutions tried, lesson, tags, and resolved status.
-    If no incidents match the topic, say exactly: "No relevant incidents found."
+    The incidents copied exactly as provided, or the phrase "No relevant incidents found." if none were given.
   agent: searcher
 
 narrate:
   description: >
-    Using only the matched incidents provided by the searcher, write a short conversational summary for the developer.
+    Using only the confirmed incidents from the searcher, write a short conversational summary for the developer.
+
+    Today's date is {today}.
 
     Rules:
     - If the searcher said "No relevant incidents found", reply only with: "Nothing similar in your knowledge base yet."
-    - Otherwise, for each matched incident write 2-3 sentences: what the problem was, what was tried, and what worked.
-    - Use natural language. Do NOT include raw incident data, structured fields, bullet points, or any copied text from the record.
-    - Do NOT invent details that are not in the matched incidents.
-    - Do NOT mention anything about incidents that were not matched.
+    - Otherwise, for each incident write 2-3 sentences: what the problem was, what was tried, and what worked.
+    - Use natural language. Do NOT include raw incident data, structured fields, bullet points, or copied text.
+    - Do NOT invent details that are not in the incidents.
   expected_output: >
-    A short conversational paragraph per matched incident. Plain prose only — no raw data, no bullet points, no field names.
-    Example: "You had a Docker networking issue yesterday — the container couldn't reach the host. You tried restarting
-    the daemon and switching network modes, and host networking is what fixed it."
+    A short conversational paragraph per incident. Plain prose only.
+    Example: "You had a Docker daemon issue inside a devcontainer. You tried restarting Docker Desktop and
+    checking the config, and mounting the Docker socket from the host is what fixed it."
     If nothing matched, say only: "Nothing similar in your knowledge base yet."
   agent: narrator
   context:

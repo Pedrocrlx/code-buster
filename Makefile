@@ -33,3 +33,9 @@ bust: # Run the Root Cause Analyst (prompts for incident description)
 
 recall: # Search past incidents for a similar problem
 	cd src/buster/AI && uv run recall.py
+
+seed: # Seed the database with 32 realistic incidents via the Buster crew
+	cd src/buster/AI && uv run seed.py
+
+test: # Run the test suite
+	uv run pytest tests/ -v

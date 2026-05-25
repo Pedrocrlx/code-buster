@@ -48,6 +48,40 @@ def fetch_all_busts() -> str:
     return "\n---\n".join(parts)
 
 
+RECALL_MIN_KEYWORD_MATCHES = 2  # minimum keyword hits required to surface a bust
+
+
+def search_by_tags(keywords: list[str]) -> str:
+    init_db()
+    with sqlite3.connect(DB_PATH) as connection:
+        connection.row_factory = sqlite3.Row
+        rows = connection.execute(
+            "SELECT * FROM busts ORDER BY created_at DESC"
+        ).fetchall()
+    if not rows:
+        return "No past busts found."
+    threshold = max(1, min(RECALL_MIN_KEYWORD_MATCHES, len(keywords)))
+    matches = []
+    for row in rows:
+        tags = json.loads(row["tags"])
+        hits = sum(
+            1 for kw in keywords
+            if any(kw in tag or tag in kw for tag in tags)
+        )
+        if hits >= threshold:
+            solutions = ", ".join(json.loads(row["attempted_solutions"]))
+            matches.append(
+                f"#{row['id']} — {row['title']}\n"
+                f"Date: {row['created_at']}\n"
+                f"Problem: {row['problem']}\n"
+                f"Solutions tried: {solutions}\n"
+                f"Lesson: {row['lesson']}\n"
+                f"Tags: {', '.join(tags)}\n"
+                f"Resolved: {'yes' if row['resolved'] else 'no'}"
+            )
+    return "\n---\n".join(matches) if matches else "No relevant busts found."
+
+
 def save_bust(data: dict) -> int:
     init_db()
     params = {
