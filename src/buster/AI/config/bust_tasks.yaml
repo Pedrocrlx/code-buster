@@ -1,0 +1,32 @@
+process:
+  description: >
+    A developer has submitted the following incident report:
+
+    {entry}
+
+    Extract:
+    - The problem that occurred
+    - What solutions were attempted
+    - What ultimately worked (if anything)
+  expected_output: >
+    A concise summary of the problem, attempted solutions, and what worked.
+  agent: processor
+
+organise:
+  description: >
+    Using the processed incident, compile the final record as a JSON object
+    with exactly these keys:
+
+    - title: short title of the problem (max 8 words)
+    - problem: what went wrong
+    - attempted_solutions: a JSON array of strings, one per attempted solution
+    - lesson: one-line reminder written as "Remember: [what worked]" based solely on the user's own solution(s)
+    - tags: a generous JSON array of short keywords for searching (e.g. ["docker", "timeout"])
+
+    Return only valid JSON. No markdown, no extra text.
+  expected_output: >
+    A valid JSON object with keys: title, problem, attempted_solutions (array), lesson, and tags (array).
+    Return only valid JSON, no markdown, no extra text.
+  agent: organizer
+  context:
+    - process
