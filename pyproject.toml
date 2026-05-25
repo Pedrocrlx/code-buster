@@ -1,6 +1,6 @@
 [project]
 name = "code-buster"
-version = "0.1.1"
+version = "0.1.9"
 description = "Code Buster CLI - Helping developers everyday"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -13,9 +13,18 @@ dependencies = [
 pythonpath = ["src/buster/AI"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
+[tool.uv]
+package = true
+
 [tool.ruff.lint]
 select = ["E", "F"]
 ignore = ["F401"]
+
+[tool.ruff]
+src = ["src"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.ruff.format]
 indent-style = "space"
@@ -23,7 +32,7 @@ quote-style = "double"
 line-ending = "lf"
 
 [project.scripts]
-buster = "main:run"
+buster = "CLI.main:app"
 
 [dependency-groups]
 dev = [

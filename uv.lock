@@ -477,8 +477,8 @@ wheels = [
 
 [[package]]
 name = "code-buster"
-version = "0.1.1"
-source = { virtual = "." }
+version = "0.1.9"
+source = { editable = "." }
 dependencies = [
     { name = "crewai" },
     { name = "typer" },

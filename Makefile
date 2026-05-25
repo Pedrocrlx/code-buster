@@ -19,7 +19,7 @@ clean_buster_dir: # remove the .buster directory
 	rm -rf .buster
 
 clean: # clean all generated cache files and directories
-	rm -rf .ruff_cache __pycache__
+	rm -rf .ruff_cache __pycache__ .buster src/code_buster.egg-info build/
 
 start-model: # Start the Ollama container and pull the model
 	docker compose up -d ollama

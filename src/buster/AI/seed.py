@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """Seed the database with realistic developer incidents processed through the Buster crew."""
+
 from crew import Buster
-from database import save_bust
+from db.database import save_bust
 
 INCIDENTS = [
     {

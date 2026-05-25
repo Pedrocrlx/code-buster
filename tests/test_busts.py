@@ -50,7 +50,7 @@ BUSTS = [
 ]
 
 
-@pytest.fixture # Creates a temporary database file for testing and patches the database path to use it.
+@pytest.fixture  # Creates a temporary database file for testing
 def tmp_db(tmp_path, monkeypatch):
     db_file = tmp_path / "test.db"
     monkeypatch.setattr(database, "DB_PATH", db_file)
@@ -59,11 +59,14 @@ def tmp_db(tmp_path, monkeypatch):
 
 @pytest.fixture
 def busted_db(tmp_db):
-    """Test database pre-populated with 3 busts created via the Buster crew. Two resolved and one unresolved."""
+    """Test database pre-populated with 3 busts created
+    via the Buster crew. Two resolved and one unresolved."""
     for bust in BUSTS:
         result = Buster().crew().kickoff(inputs={"entry": bust["entry"]})
         if result.pydantic is None:
-            pytest.skip("Buster crew failed to produce structured output — model may be unreliable")
+            pytest.skip(
+                "Crew failed to produce structured output model may be unreliable"
+            )
         data = result.pydantic.model_dump()
         data["resolved"] = bust["resolved"]
         save_bust(data)
@@ -72,12 +75,14 @@ def busted_db(tmp_db):
 
 # Bust Tests:
 
+
 @ollama
 def testing_creation_of_three_busts(busted_db):
-    """Buster crew processes 3 busts and stores them in the database with predeterminated busts, two resolved and one unresolved."""
-    
-    with sqlite3.connect(busted_db) as conn: 
-        rows = conn.execute("SELECT id, resolved FROM busts ORDER BY id").fetchall() 
+    """Buster crew processes 3 busts and stores them in the database
+    with predeterminated busts, two resolved and one unresolved."""
+
+    with sqlite3.connect(busted_db) as conn:
+        rows = conn.execute("SELECT id, resolved FROM busts ORDER BY id").fetchall()
 
     assert len(rows) == 3
 
@@ -88,37 +93,60 @@ def testing_creation_of_three_busts(busted_db):
 
 # Recall Tests:
 
+
 @ollama
 def test_recall_direct_query(busted_db):
-    """Direct recall: explicit keywords ('docker daemon') surface the devcontainer incident."""
+    """Direct recall: explicit keywords
+    ('docker daemon') surface the devcontainer incident."""
     query = "docker daemon"
     matches = filter_busts(query)
 
-    assert matches != "No relevant busts found.", "Search found no matches for a direct query"
+    assert matches != "No relevant busts found.", (
+        "Search found no matches for a direct query"
+    )
 
-    result = Recall().crew().kickoff(inputs={
-        "query": query,
-        "matches": matches,
-        "today": "2026-05-24",
-    })
+    result = (
+        Recall()
+        .crew()
+        .kickoff(
+            inputs={
+                "query": query,
+                "matches": matches,
+                "today": "2026-05-24",
+            }
+        )
+    )
 
     assert result.raw.strip(), "Recall crew returned empty output"
-    assert "nothing similar" not in result.raw.lower(), "Recall crew found no relevant results for a direct query"
+    assert "nothing similar" not in result.raw.lower(), (
+        "Recall crew found no relevant results for a direct query"
+    )
 
 
 @ollama
 def test_recall_vague_query(busted_db):
-    """Vague recall: partial keyword ('container') still surfaces the devcontainer incident."""
+    """Vague recall: partial keyword ('container')
+    still surfaces the devcontainer incident."""
     query = "container problem"
     matches = filter_busts(query)
 
-    assert matches != "No relevant busts found.", "Search found no matches for a vague query"
+    assert matches != "No relevant busts found.", (
+        "Search found no matches for a vague query"
+    )
 
-    result = Recall().crew().kickoff(inputs={
-        "query": query,
-        "matches": matches,
-        "today": "2026-05-24",
-    })
+    result = (
+        Recall()
+        .crew()
+        .kickoff(
+            inputs={
+                "query": query,
+                "matches": matches,
+                "today": "2026-05-24",
+            }
+        )
+    )
 
     assert result.raw.strip(), "Recall crew returned empty output"
-    assert "nothing similar" not in result.raw.lower(), "Recall crew found no relevant results for a vague query"
+    assert "nothing similar" not in result.raw.lower(), (
+        "Recall crew found no relevant results for a vague query"
+    )
