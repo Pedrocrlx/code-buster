@@ -28,8 +28,11 @@ start-model: # Start the Ollama container and pull the model
 stop-model: # Stop the Ollama container
 	docker compose stop ollama
 
-bust: # Run the Root Cause Analyst (prompts for incident description)
+bust: # Run the Root Cause Analyst (prompts for incident description, saves to busts/ as MD)
 	cd src/buster/AI && uv run main.py
+
+save: # Save a bust MD file to the database: make save FILE=busts/bust_....md
+	cd src/buster/AI && uv run save.py ../../../$(FILE)
 
 recall: # Search past incidents for a similar problem
 	cd src/buster/AI && uv run recall.py

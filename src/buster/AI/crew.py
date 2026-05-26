@@ -28,25 +28,11 @@ class Recall:
     tasks: list[Task]
 
     @agent
-    def searcher(self) -> Agent:
-        return Agent(
-            config=self.agents_config["searcher"],  # type: ignore[index]
-            llm=local_model,
-            verbose=False,
-        )
-
-    @agent
     def narrator(self) -> Agent:
         return Agent(
             config=self.agents_config["narrator"],  # type: ignore[index]
             llm=local_model,
             verbose=False,
-        )
-
-    @task
-    def search(self) -> Task:
-        return Task(
-            config=self.tasks_config["search"],  # type: ignore[index]
         )
 
     @task
