@@ -2,7 +2,8 @@
 import re
 import sys
 from pathlib import Path
-from database import save_bust
+
+from db.database import save_bust
 
 
 def parse_md(text: str) -> dict:
@@ -17,7 +18,11 @@ def parse_md(text: str) -> dict:
     resolved_str = resolved_match.group(1).lower() if resolved_match else "no"
 
     solutions_block = section("Solutions Tried")
-    solutions = [line.lstrip("- ").strip() for line in solutions_block.splitlines() if line.strip()]
+    solutions = [
+        line.lstrip("- ").strip()
+        for line in solutions_block.splitlines()
+        if line.strip()
+    ]
 
     tags_block = section("Tags")
     tags = [t.strip() for t in tags_block.split(",") if t.strip()]

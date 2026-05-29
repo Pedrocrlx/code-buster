@@ -7,9 +7,10 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
-from crew import Buster
 
-BUSTS_DIR = Path(__file__).parent.parent.parent.parent / "busts"
+from buster.AI.crew import Buster
+
+BUSTS_DIR = Path.cwd() / ".buster"
 
 
 def visual_loading(messages: list[str]):
@@ -49,19 +50,20 @@ def visual_loading(messages: list[str]):
     return on_task_done, finish
 
 
-def run():
-    print("What project were you working on?")  # Saved like an email subject
+def run(busts_dir: Path | None = None):
+    if busts_dir is None:
+        busts_dir = Path.cwd() / ".buster"
+
+    print("What project were you working on?")
     project = input("> ").strip()
 
-    print("\nWhat was the issue you were facing?")  # Description of the problem
+    print("\nWhat was the issue you were facing?")
     issue = input("> ").strip()
 
-    print(
-        "\nWhat did you try to solve it?"
-    )  # The solution or solutions attempted, can be multiple and separated by commas
+    print("\nWhat did you try to solve it?")
     solution = input("> ").strip()
 
-    print("\nDid it work? (yes/no)")  # Whether the issue was resolved or not,
+    print("\nDid it work? (yes/no)")
     # saved as a boolean but asked in a yes/no format for better UX
     resolved = input("> ").strip().lower()
 
@@ -101,13 +103,19 @@ def run():
 
     finish()
 
+    if result.pydantic is None:
+        raise RuntimeError(
+            "Failed to generate structured output. "
+            "The AI model may be unreliable or offline."
+        )
+
     data = result.pydantic.model_dump()
     data["resolved"] = resolved in ("yes", "y")
 
-    BUSTS_DIR.mkdir(parents=True, exist_ok=True)
+    busts_dir.mkdir(parents=True, exist_ok=True)
     slug = re.sub(r"[^a-z0-9]+", "_", data["title"].lower()).strip("_")[:40]
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = BUSTS_DIR / f"bust_{timestamp}_{slug}.md"
+    filename = busts_dir / f"bust_{timestamp}_{slug}.md"
 
     resolved_str = "yes" if data["resolved"] else "no"
     solutions_md = "\n".join(f"- {s}" for s in data["attempted_solutions"])
@@ -123,7 +131,12 @@ def run():
     )
 
     filename.write_text(md)
-    print(f"\nBust saved to: {filename.relative_to(Path.cwd()) if filename.is_relative_to(Path.cwd()) else filename}")
+    filepath = (
+        filename.relative_to(Path.cwd())
+        if filename.is_relative_to(Path.cwd())
+        else filename
+    )
+    print(f"\nBust saved to: {filepath}")
     print("Review and edit it, then run: make save FILE=<path>")
 
 

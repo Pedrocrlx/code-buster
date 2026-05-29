@@ -5,8 +5,91 @@ import sys
 import threading
 import time
 from datetime import date
-from crew import Recall
-from database import extract_keywords, search_by_tags
+
+from buster.AI.crew import Recall
+from db.database import search_by_tags
+
+_STOP_WORDS = {
+    "a",
+    "an",
+    "the",
+    "is",
+    "it",
+    "my",
+    "i",
+    "am",
+    "are",
+    "was",
+    "were",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "and",
+    "or",
+    "but",
+    "with",
+    "not",
+    "no",
+    "by",
+    "be",
+    "been",
+    "from",
+    "as",
+    "up",
+    "out",
+    "this",
+    "that",
+    "which",
+    "who",
+    "what",
+    "how",
+    "why",
+    "when",
+    "where",
+    "can",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "shall",
+    "about",
+    "into",
+    "something",
+    "getting",
+    "keeps",
+    "keep",
+    "seems",
+    "seem",
+    "happening",
+    "happen",
+    "trying",
+    "try",
+    "using",
+    "still",
+    "just",
+    "some",
+    "also",
+    "then",
+    "than",
+    "too",
+    "very",
+    "its",
+}
+
+
+def extract_keywords(query: str) -> list[str]:
+    return [w for w in query.lower().split() if w not in _STOP_WORDS and len(w) > 2]
 
 
 def filter_busts(query: str) -> str:
@@ -63,9 +146,12 @@ def run():
         return
 
     print()
-    on_task_done, finish = visual_loading([
-        "Searching your knowledge base and putting it into words",
-    ])
+    on_task_done, finish = visual_loading(
+        [
+            "Searching your knowledge base",
+            "Putting it into words",
+        ]
+    )
 
     recall = Recall()
     recall._task_callback = on_task_done
@@ -75,11 +161,13 @@ def run():
 
     try:
         with suppress_stdout, suppress_stderr:
-            result = recall.crew().kickoff(inputs={
-                "query": query,
-                "matches": matches,
-                "today": date.today().isoformat(),
-            })
+            result = recall.crew().kickoff(
+                inputs={
+                    "query": query,
+                    "matches": matches,
+                    "today": date.today().isoformat(),
+                }
+            )
     except Exception:
         finish()
         raise

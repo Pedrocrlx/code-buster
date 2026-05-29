@@ -9,5 +9,5 @@ __pycache__/
 models/
 buster/output/
 *.db
-
-busts/
+build/
+code_buster.egg-info/
