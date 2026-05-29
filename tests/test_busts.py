@@ -1,12 +1,11 @@
 import sqlite3
 
+import database
 import httpx
 import pytest
-
-import database
+from crew import Buster, Recall
 from database import save_bust
 from recall import filter_busts
-from crew import Buster, Recall
 
 
 def _ollama_running() -> bool:
@@ -23,8 +22,10 @@ BUSTS = [
     {
         "entry": (
             "Project: devcontainer setup. "
-            "Issue: Docker daemon not running inside the devcontainer — docker ps returns 'Cannot connect to the Docker daemon'. "
-            "Solution attempted: mounted /var/run/docker.sock from the host into the devcontainer. "
+            "Issue: Docker daemon not running inside the devcontainer "
+            "— docker ps returns 'Cannot connect to the Docker daemon'. "
+            "Solution attempted: mounted /var/run/docker.sock from the "
+            "host into the devcontainer. "
             "Resolved?: yes."
         ),
         "resolved": True,
@@ -32,8 +33,10 @@ BUSTS = [
     {
         "entry": (
             "Project: backend API. "
-            "Issue: Git rebase conflict blocking the CI pipeline deployment. "
-            "Solution attempted: resolved merge conflicts manually on the feature branch and rebased. "
+            "Issue: Git rebase conflict blocking the CI pipeline "
+            "deployment. "
+            "Solution attempted: resolved merge conflicts manually on the "
+            "feature branch and rebased. "
             "Resolved?: yes."
         ),
         "resolved": True,
@@ -41,8 +44,10 @@ BUSTS = [
     {
         "entry": (
             "Project: database service. "
-            "Issue: Database connection refused on application startup, psycopg2 raises OperationalError. "
-            "Solution attempted: checked the connection string and environment variables for typos. "
+            "Issue: Database connection refused on application startup, "
+            "psycopg2 raises OperationalError. "
+            "Solution attempted: checked the connection string and "
+            "environment variables for typos. "
             "Resolved?: no."
         ),
         "resolved": False,

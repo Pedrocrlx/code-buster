@@ -5,7 +5,8 @@ import sys
 import threading
 import time
 from datetime import date
-from crew import Recall
+
+from buster.AI.crew import Recall
 from db.database import search_by_tags
 
 _STOP_WORDS = {

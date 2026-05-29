@@ -1,10 +1,8 @@
 .PHONY: up down clean start-model stop-model analyze
 
-db: # create the SQLite database file
-	uv run typer main.py db
-
 tool: # install the tool locally
 	uv tool install .
+
 down: # Stop the containers
 	docker compose down
 
@@ -15,7 +13,7 @@ ruff: # run ruff format and check
 pre-commit: # run all pre-commit checks
 	uv run pre-commit run --all-files
 
-clean_buster_dir: # remove the .buster directory
+clean_buster: # remove the .buster directory
 	rm -rf .buster
 
 clean: # clean all generated cache files and directories
