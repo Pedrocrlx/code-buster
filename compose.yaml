@@ -14,5 +14,5 @@ services:
     image: ollama/ollama
     ports:
       - "11434:11434"
-    volumes:
-      - ./models:/root/.ollama
+    #volumes:
+     # - ./models:/root/.ollama
