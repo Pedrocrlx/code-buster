@@ -1,53 +1,15 @@
 #!/usr/bin/env python
 import contextlib
 import io
+import logging
 import re
-import sys
-import threading
-import time
 from datetime import datetime
 from pathlib import Path
 
 from buster.AI.crew import Buster
+from buster.AI.ui import visual_loading
 
 BUSTS_DIR = Path.cwd() / ".buster"
-
-
-def visual_loading(messages: list[str]):
-    terminal = sys.stdout
-    task_events = [threading.Event() for _ in messages]
-    progress_done = threading.Event()
-
-    def on_task_done(task_output):
-        for task_event in task_events:
-            if not task_event.is_set():
-                task_event.set()
-                break
-
-    def visual_processing():
-        spinning_wheel = "|/-\\"
-        for message, task_event in zip(messages, task_events):
-            terminal.write(f"{message}... ")
-            terminal.flush()
-            frame_index = 0
-            while not task_event.is_set():
-                terminal.write(spinning_wheel[frame_index % 4])
-                terminal.flush()
-                time.sleep(0.1)
-                terminal.write("\b \b")
-                terminal.flush()
-                frame_index += 1
-            terminal.write(" DONE!\n")
-            terminal.flush()
-        progress_done.set()
-
-    def finish():
-        for task_event in task_events:
-            task_event.set()
-        progress_done.wait(timeout=2)
-
-    threading.Thread(target=visual_processing, daemon=True).start()
-    return on_task_done, finish
 
 
 def run(busts_dir: Path | None = None):
@@ -56,15 +18,20 @@ def run(busts_dir: Path | None = None):
 
     print("What project were you working on?")
     project = input("> ").strip()
+    if not project:
+        raise ValueError("Project name cannot be empty.")
 
     print("\nWhat was the issue you were facing?")
     issue = input("> ").strip()
+    if not issue:
+        raise ValueError("Issue description cannot be empty.")
 
     print("\nWhat did you try to solve it?")
     solution = input("> ").strip()
+    if not solution:
+        raise ValueError("Solution description cannot be empty.")
 
     print("\nDid it work? (yes/no)")
-    # saved as a boolean but asked in a yes/no format for better UX
     resolved = input("> ").strip().lower()
 
     entry = (  # How it's sent to the CrewAI, a single string with all the information
@@ -83,23 +50,20 @@ def run(busts_dir: Path | None = None):
         ]
     )
 
-    buster = Buster()
-    buster._task_callback = on_task_done
-
-    # Stdout and stderr suppressed so CrewAI logs don't bleed into the terminal
-    suppress_stdout = contextlib.redirect_stdout(
-        io.StringIO()
-    )  # Suppress standard output (logs, info, etc.)
-    suppress_stderr = contextlib.redirect_stderr(
-        io.StringIO()
-    )  # Suppress standard error (errors, warnings, etc.)
+    suppress_stdout = contextlib.redirect_stdout(io.StringIO())
+    suppress_stderr = contextlib.redirect_stderr(io.StringIO())
 
     try:
+        logging.disable(logging.WARNING)
         with suppress_stdout, suppress_stderr:
+            buster = Buster()
+            buster._task_callback = on_task_done
             result = buster.crew().kickoff(inputs={"entry": entry})
     except Exception:
         finish()
         raise
+    finally:
+        logging.disable(logging.NOTSET)
 
     finish()
 
@@ -110,11 +74,18 @@ def run(busts_dir: Path | None = None):
         )
 
     data = result.pydantic.model_dump()
+    # Change accepted values here to support other resolved inputs (e.g. "y", "1")
     data["resolved"] = resolved in ("yes", "y")
 
     busts_dir.mkdir(parents=True, exist_ok=True)
-    slug = re.sub(r"[^a-z0-9]+", "_", data["title"].lower()).strip("_")[:40]
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    slug = re.sub(r"[^a-z0-9]+", "_", data["title"].lower()).strip("_")[
+        :40
+    ]  # change [:40] to adjust max slug length
+    timestamp = datetime.now().strftime(
+        "%Y%m%d_%H%M%S"
+    )  # change format string to alter date style in filename
+    # Change prefix or structure below to alter the output .md filename.
+    # If you change the prefix ("bust_"), update the glob in CLI/main.py save --all accordingly.
     filename = busts_dir / f"bust_{timestamp}_{slug}.md"
 
     resolved_str = "yes" if data["resolved"] else "no"

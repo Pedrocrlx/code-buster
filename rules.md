@@ -60,16 +60,16 @@ The primary objective is to design and develop a robust Python backend solution 
 
 ## 3. Evaluation (20 points)
 
-| Criterion | Points | Requirements |
-|---|---|---|
-| Source Code | 3 | Clean, modular, well-documented Python. Hosted on GitHub/GitLab with conventional commits. Git tag before final class at 23h59 Lisbon time. GitHub Release Page on Classroom. |
-| Backend Application | 2 | Built with FastAPI, Django, or a CLI-based solution. |
-| AI Agent Integration | 4 | At least one CrewAI agent. Clear backend↔agent interface. Agents perform useful tasks (analysis, automation, recommendations). |
-| Database | 1 | Persistent storage with PostgreSQL or SQLite. Basic auth/session handling if needed. |
-| Documentation | 2 | System architecture, usage guide, installation guide. Swagger/OpenAPI if using FastAPI. Brief report on what the project does and implementation challenges. |
-| Testing | 2 | Unit and integration tests (minimum 1 meaningful test per feature). Instructions to run tests. |
-| Deployment | 3 | Docker and Docker Compose for containerised deployment. CI/CD setup (script or GitHub Actions). |
-| Responsible & Transparent AI Use | 3 | See section 4. |
+| Criterion | Points | Requirements | Status |
+|---|---|---|---|
+| Source Code | 3 | Clean, modular, well-documented Python. Hosted on GitHub/GitLab with conventional commits. Git tag before final class at 23h59 Lisbon time. GitHub Release Page on Classroom. | ✅ Code clean and modular. ⚠️ Git tag + GitHub Release still required before submission. |
+| Backend Application | 2 | Built with FastAPI, Django, or a CLI-based solution. | ✅ Typer CLI with 6 commands: `setup`, `init`, `db`, `bust`, `save`, `recall`. |
+| AI Agent Integration | 4 | At least one CrewAI agent. Clear backend↔agent interface. Agents perform useful tasks (analysis, automation, recommendations). | ✅ Two CrewAI crews (Buster: processor + organizer; Recall: narrator). Clear interface via `run()` functions. Agents process incidents and narrate past solutions. |
+| Database | 1 | Persistent storage with PostgreSQL or SQLite. Basic auth/session handling if needed. | ✅ SQLite via `db.database`. Schema with 8 columns. Tag search, fetch, and save implemented. |
+| Documentation | 2 | System architecture, usage guide, installation guide. Swagger/OpenAPI if using FastAPI. Brief report on what the project does and implementation challenges. | ✅ README has architecture diagram, quick-start, all commands with examples, and implementation challenges section. |
+| Testing | 2 | Unit and integration tests (minimum 1 meaningful test per feature). Instructions to run tests. | ✅ 26 tests across 5 files (DB, parsing, CLI, bust pipeline, recall pipeline). `make test` documented. CI runs tests automatically. |
+| Deployment | 3 | Docker and Docker Compose for containerised deployment. CI/CD setup (script or GitHub Actions). | ✅ `compose.yaml` with Ollama service. GitHub Actions CI with lint and test jobs. `buster setup` automates first-time deployment. |
+| Responsible & Transparent AI Use | 3 | See section 4. | ✅ `README.md` AI Usage section lists every file created or modified with Claude Code, the tool used, and the scope of use. |
 
 ---
 

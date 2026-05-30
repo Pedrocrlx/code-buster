@@ -1,12 +1,19 @@
-from pydantic import BaseModel
+import os
+
 from crewai import LLM, Agent, Crew, Process, Task
-from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
+from crewai.project import CrewBase, agent, crew, task
+from pydantic import BaseModel
+
+# Override via env vars: OLLAMA_BASE_URL, OLLAMA_MODEL
+# If you change the default model here, update the pull command in CLI/main.py setup as well.
+_OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+_OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "ollama/qwen2.5:1.5b")
 
 local_model = LLM(
-    model="ollama/qwen2.5:1.5b",
-    base_url="http://localhost:11434",
-    temperature=0.2,  # lower = more focused/deterministic output
+    model=_OLLAMA_MODEL,
+    base_url=_OLLAMA_BASE_URL,
+    temperature=0.2,  # range 0.0–1.0: lower = more deterministic, higher = more creative
 )
 
 

@@ -1,8 +1,3 @@
-searcher:
-  role: Incident Searcher
-  goal: Understand what the developer is trying to recall and identify all relevant past incidents from the knowledge base.
-  backstory: You are an expert at reading between the lines. Given a vague or specific problem description, you find every past incident that could be related — by symptoms, tags, project context, or keywords — and return their full details.
-
 narrator:
   role: Recall Narrator
   goal: Turn a list of matched past incidents into a clear, conversational summary the developer can immediately act on.

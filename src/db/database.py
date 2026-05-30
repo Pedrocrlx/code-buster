@@ -1,96 +1,30 @@
 import json
+import os
 import sqlite3
 from datetime import date, datetime
 from pathlib import Path
 
-target_dir = Path.cwd() / ".buster"
-db_path = target_dir / "buster.db"
+DB_PATH = (
+    Path(os.environ["BUSTER_DB_PATH"])
+    if "BUSTER_DB_PATH" in os.environ
+    else Path.cwd() / ".buster" / "buster.db"
+)
 
+_STOP_WORDS_FILE = Path(__file__).parent / "stop_words.md"
 _STOP_WORDS = {
-    "a",
-    "an",
-    "the",
-    "is",
-    "it",
-    "my",
-    "i",
-    "am",
-    "are",
-    "was",
-    "were",
-    "have",
-    "has",
-    "had",
-    "do",
-    "does",
-    "did",
-    "in",
-    "on",
-    "at",
-    "to",
-    "for",
-    "of",
-    "and",
-    "or",
-    "but",
-    "with",
-    "not",
-    "no",
-    "by",
-    "be",
-    "been",
-    "from",
-    "as",
-    "up",
-    "out",
-    "this",
-    "that",
-    "which",
-    "who",
-    "what",
-    "how",
-    "why",
-    "when",
-    "where",
-    "can",
-    "will",
-    "would",
-    "could",
-    "should",
-    "may",
-    "might",
-    "shall",
-    "about",
-    "into",
-    "something",
-    "getting",
-    "keeps",
-    "keep",
-    "seems",
-    "seem",
-    "happening",
-    "happen",
-    "trying",
-    "try",
-    "using",
-    "still",
-    "just",
-    "some",
-    "also",
-    "then",
-    "than",
-    "too",
-    "very",
-    "its",
+    line.strip()
+    for line in _STOP_WORDS_FILE.read_text().splitlines()
+    if line.strip() and not line.startswith("#")
 }
 
 
 def extract_keywords(text: str) -> list[str]:
+    # Change > 2 to raise the minimum word length (e.g. > 3 drops two-letter words like "db")
     return [w for w in text.lower().split() if w not in _STOP_WORDS and len(w) > 2]
 
 
 def init_db() -> None:
-    with sqlite3.connect(db_path) as connection:
+    with sqlite3.connect(DB_PATH) as connection:
         connection.execute("""
             CREATE TABLE IF NOT EXISTS busts (
                 id                  INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,7 +41,7 @@ def init_db() -> None:
 
 def fetch_all_busts() -> str:
     init_db()
-    with sqlite3.connect(db_path) as connection:
+    with sqlite3.connect(DB_PATH) as connection:
         connection.row_factory = sqlite3.Row
         rows = connection.execute(
             "SELECT * FROM busts ORDER BY created_at DESC"
@@ -131,12 +65,14 @@ def fetch_all_busts() -> str:
     return "\n---\n".join(parts)
 
 
-RECALL_MIN_KEYWORD_MATCHES = 2  # minimum keyword hits required to surface a bust
+# Minimum number of query keywords that must match a bust's tags to surface it.
+# Raise to require stricter matches; lower to 1 for broader, noisier recall.
+RECALL_MIN_KEYWORD_MATCHES = 2
 
 
 def search_by_tags(keywords: list[str]) -> str:
     init_db()
-    with sqlite3.connect(db_path) as connection:
+    with sqlite3.connect(DB_PATH) as connection:
         connection.row_factory = sqlite3.Row
         rows = connection.execute(
             "SELECT * FROM busts ORDER BY created_at DESC"
@@ -181,7 +117,7 @@ def save_bust(data: dict) -> int:
         "resolved": int(data["resolved"]),
         "created_at": datetime.now().isoformat(),
     }
-    with sqlite3.connect(db_path) as connection:
+    with sqlite3.connect(DB_PATH) as connection:
         cursor = connection.execute(
             """INSERT INTO busts (title, problem, attempted_solutions,
             lesson, tags, resolved, created_at)

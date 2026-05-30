@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["src/buster/AI"]
+pythonpath = ["src/buster/AI", "tests"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.uv]
@@ -25,6 +25,9 @@ src = ["src"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["config/*.yaml", "stop_words.md"]
 
 [tool.ruff.format]
 indent-style = "space"
