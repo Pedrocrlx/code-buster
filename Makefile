@@ -47,7 +47,7 @@ lint:
 	rm -rf .ruff_cache
 	uv run ruff format && uv run ruff check
 
-## Runs all pre-commit hooks across all files 
+## Runs all pre-commit hooks across all files
 ## Use before committing to git to ensure code quality
 pre-commit:
 	uv run pre-commit run --all-files
