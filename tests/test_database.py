@@ -59,6 +59,5 @@ def test_fetch_all_busts_format(tmp_db, hardcoded_md_files):
     result = fetch_all_busts()
 
     assert "docker" in result.lower()
-    assert "rebase" in result.lower() or "pipeline" in result.lower()
     assert "psycopg2" in result.lower() or "database" in result.lower()
-    assert result.count("---") == 2  # 3 entries → 2 separators
+    assert result.count("---") == 1  # 2 entries → 1 separator

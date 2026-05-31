@@ -1,0 +1,1 @@
+Project: Node.js web app. Issue: Missing npm peer dependency caused a build failure — npm ERR! ERESOLVE unable to resolve dependency tree. Solution attempted: installed the exact peer dependency version required by the conflicting package. Resolved?: yes.

@@ -171,24 +171,26 @@ Tests that require Ollama are skipped automatically if the model is not running.
 
 ```
 tests/
-├── conftest.py        # shared fixtures
-├── example_busts.py   # shared test data and ollama mark
-├── test_bust.py       # bust creation pipeline and word filter middleware
-├── test_cli.py        # CLI command tests
-├── test_database.py   # database layer tests
-├── test_parse.py      # parse_md unit tests
-└── test_recall.py     # search and recall pipeline tests
+├── conftest.py              # shared fixtures
+├── example_busts.py         # loads fixture files, exposes HARDCODED_MDS / AI_ENTRY / ollama mark
+├── fixtures/
+│   ├── resolved.md          # hardcoded resolved bust (Docker daemon)
+│   ├── unresolved.md        # hardcoded unresolved bust (DB connection)
+│   └── pending_processing.md  # raw entry string fed to the AI crew in Ollama tests
+├── test_bust.py             # bust creation pipeline and word filter middleware
+├── test_cli.py              # CLI command tests
+├── test_database.py         # database layer tests
+├── test_parse.py            # parse_md unit tests
+└── test_recall.py           # search and recall pipeline tests
 ```
 
 ---
 
 ## Implementation Challenges
 
-**CrewAI config not packaged on install** — `@CrewBase` resolves YAML config paths relative to the installed package location. The `config/` directory was not included in the wheel because `pyproject.toml` had no `package-data` entry, causing `FileNotFoundError` at runtime. Fixed by adding `[tool.setuptools.package-data]` to include `*.yaml` files.
+**Makefile vs CLI boundary** — The project has both a `Makefile` for developer tooling and a `buster` CLI for end-user commands. Early on the boundary was unclear, with some operations duplicated across both. The split was resolved by treating the CLI as the user-facing interface for all runtime operations (`bust`, `save`, `recall`, `setup`) and the Makefile strictly as a dev convenience layer for things with no CLI equivalent — running tests, linting, seeding data, managing containers.
 
-**CrewAI log bleed into the terminal** — CrewAI emits warnings and telemetry via Python's `logging` module. `contextlib.redirect_stderr` does not capture these because logging handlers hold a reference to the original `sys.stderr`. Fixed by calling `logging.disable(logging.WARNING)` before crew execution and restoring it in a `finally` block, alongside moving crew instantiation inside the suppression context.
-
-**pytest module identity and DB patching** — `import database` (via `sys.path`) and `from db import database` (via the installed package) produce two separate module objects. Patching one with `monkeypatch.setattr` had no effect on the other, so `search_by_tags` was reading from the wrong `DB_PATH`. Fixed by aligning all test imports to use the package path (`from db import database`).
+**Keyword-based recall limitation** — The recall system matches a user's query against stored bust tags by splitting the query into keywords and checking for overlap. This works for direct matches but struggles with synonyms, related concepts, or queries phrased differently from how the tags were generated. A semantic search approach (e.g. embedding similarity) would be more robust but was out of scope given the offline-first constraint and the model size available via Ollama.
 
 **Small model reliability** — `qwen2.5:1.5b` sometimes ignores conditional instructions (e.g. "if matches says no results, output this exact phrase"). Test assertions over LLM output phrasing were replaced with deterministic DB-layer checks, keeping only `result.raw.strip()` as the LLM guard.
 
@@ -196,15 +198,17 @@ tests/
 
 ## AI Usage
 
-This project was built with assistance from **Claude Code (Anthropic)** throughout development. All generated code was reviewed and understood by the author before being committed.
+This project was built with assistance from **Claude Code (Anthropic)** throughout development. Claude Code was involved in most phases of development — from initial planning through to final refactoring. It was used as a thinking partner as much as a code generator, and all output was reviewed and understood before being accepted.
 
 | Area | How Claude Code was used |
 |---|---|
-| Architecture & design | Debating crew separation (Buster vs Recall as independent crews), agent role definitions, and the CLI↔AI interface contract |
-| Bug investigation | Diagnosing CrewAI log bleed through `redirect_stderr`, the pytest module identity issue with `DB_PATH` patching, and the wrong empty-result string comparison in recall |
-| Test suite design | Designing the test file structure, fixture strategy (deterministic hardcoded MDs vs Ollama-gated tests), and identifying edge cases — empty queries, stop-word-only inputs, missing files, idempotent setup |
-| Optimisation debates | Discussing `DB_PATH` resolution timing (import-time vs call-time), tag search threshold behaviour, LLM output assertion strategy for a non-deterministic small model, Unix timestamp vs human-readable filenames |
-| Design decisions | Removing `created_at` from the DB schema (no timestamps stored); removing hidden tag enrichment from `save_bust` so the MD review step is the single source of truth for what enters the database |
-| CLI design | Structuring the `buster save` multi-file interface (`--all`, multiple args, partial failure handling) and the `buster setup` idempotent flow |
-| Refactoring | Identifying duplicated logic (`visual_loading`, `extract_keywords`), dead code (`searcher` agent, vestigial `run()`), and missing package data configuration; centralising all shared constants into `settings.py` |
-| Documentation | Scaffolding the architecture diagram, implementation challenges section, and this README |
+| Design | Thinking through how to split responsibilities across agents and layers, and where to draw the line between what belongs in the AI crew vs. the CLI |
+| Framework research | Understanding how third-party libraries behave internally — e.g. why CrewAI logs couldn't be silenced with standard stream redirection, or how package data needs to be declared to survive installation |
+| Debugging | Investigating bugs where the root cause wasn't obvious — patching the wrong module object, a string comparison that never matched, telemetry output polluting the terminal |
+| Test strategy | Deciding what's worth testing, how to structure fixtures, and how to keep slow AI-dependent tests separate from fast deterministic ones |
+| Trade-off discussions | Talking through small decisions like schema columns, file naming, search thresholds, and when not to abstract |
+| Refactoring | Identifying dead code, duplication, and structural issues; discussing what to simplify vs. what to leave alone |
+| Compliance | Cross-checking the project against assignment requirements and spotting missing deliverables (e.g. git tag, CI coverage) |
+| Planning | Breaking the project into epics and tasks, and helping split work across team members in a way that minimised overlap and dependency conflicts |
+| Writing | Improving phrasing and tone throughout — commit messages, documentation, and challenge descriptions — to be clear and professional without losing the original meaning |
+| Documentation | Drafting the architecture diagram, the implementation challenges section, and this README |

@@ -24,18 +24,18 @@ def test_recall_direct_query(busted_db):
 
 @ollama
 def test_recall_vague_query(busted_db):
-    """Vague recall: 'git pipeline' surfaces the Git rebase bust
-    using two of its tags without naming rebase or conflict directly.
-    Test fails if the Git bust is not found."""
-    query = "git pipeline"
+    """Vague recall: 'postgres startup' surfaces the database connection bust
+    using indirect terms without naming the exact error directly.
+    Test fails if the database bust is not found."""
+    query = "postgres startup"
     matches = filter_busts(query)
 
     assert matches != "No relevant busts found.", "No match for vague query"
-    assert "pipeline" in matches.lower() or "rebase" in matches.lower(), (
-        "Git rebase incident not in matches"
+    assert "psycopg2" in matches.lower() or "database" in matches.lower(), (
+        "Database incident not in matches"
     )
     assert "devcontainer" not in matches.lower(), (
-        "Wrong incident (Docker) returned for pipeline query"
+        "Wrong incident (Docker) returned for postgres query"
     )
 
     result = Recall().crew().kickoff(inputs={"query": query, "matches": matches})
