@@ -1,10 +1,28 @@
 #!/usr/bin/env python
-"""Seed database with realistic developer incidents through Buster crew."""
+
+# Bust Problems to feed the Buster CrewAI
+# Features realistic data, varied issues and solutions
+# Used for manual reviewing of AI output (parsing + structuring)
+"""Seed .busts with realistic developer busts as .md files.
+
+Runs each bust through the Buster crew and writes a bust_*.md file to
+.busts/ for review. Nothing is saved to the database automatically.
+Once you are happy with the output, run:  buster save --all
+"""
+
+import time
+from pathlib import Path
 
 from buster.AI.crew import Buster
-from db.database import save_bust
+from settings import BUSTS_DIR_NAME, BUST_PREFIX
 
-INCIDENTS = [
+_WORD_FILTER = {
+    line.strip()
+    for line in (Path(__file__).parent / "word_filter.md").read_text().splitlines()
+    if line.strip() and not line.startswith("#")
+}
+
+BUSTS = [
     {
         "entry": (
             "Project: devcontainer setup. "
@@ -379,30 +397,55 @@ INCIDENTS = [
 
 
 def main() -> None:
-    total = len(INCIDENTS)
-    saved = 0
+    busts_dir = Path.cwd() / BUSTS_DIR_NAME
+    busts_dir.mkdir(parents=True, exist_ok=True)
+
+    total = len(BUSTS)
+    written = 0
     failed = 0
 
-    print(f"Seeding {total} incidents through the Buster crew...\n")
+    print(f"Processing {total} busts through the Buster crew...\n")
 
-    for i, incident in enumerate(INCIDENTS, 1):
+    for i, bust in enumerate(BUSTS, 1):
         print(f"[{i}/{total}] Processing...", end=" ", flush=True)
         try:
-            result = Buster().crew().kickoff(inputs={"entry": incident["entry"]})
+            result = Buster().crew().kickoff(inputs={"entry": bust["entry"]})
             if result.pydantic is None:
                 print("SKIPPED (model did not return structured output)")
                 failed += 1
                 continue
+
             data = result.pydantic.model_dump()
-            data["resolved"] = incident["resolved"]
-            bust_id = save_bust(data)
-            print(f"Saved as Bust #{bust_id} — {data['title']}")
-            saved += 1
+            data["resolved"] = bust["resolved"]
+
+            # same middleware as main.py — filter before writing to MD
+            data["tags"] = [
+                tag for tag in data["tags"] if tag.lower() not in _WORD_FILTER
+            ]
+
+            resolved_str = "yes" if data["resolved"] else "no"
+            solutions_md = "\n".join(f"- {s}" for s in data["attempted_solutions"])
+            tags_str = ", ".join(data["tags"])
+            filepath = busts_dir / f"{BUST_PREFIX}{int(time.time())}.md"
+
+            filepath.write_text(
+                f"# {data['title']}\n\n"
+                f"**Resolved:** {resolved_str}\n\n"
+                f"## Problem\n{data['problem']}\n\n"
+                f"## Solutions Tried\n{solutions_md}\n\n"
+                f"## Lesson\n{data['lesson']}\n\n"
+                f"## Tags\n{tags_str}\n"
+            )
+
+            print(f"Written — {filepath.name}")
+            written += 1
         except Exception as e:
             print(f"ERROR — {e}")
             failed += 1
 
-    print(f"\nDone. {saved} saved, {failed} skipped.")
+    print(f"\nDone. {written} files written to {BUSTS_DIR_NAME}/, {failed} skipped.")
+    if written:
+        print("Review the files, then run:  buster save --all")
 
 
 if __name__ == "__main__":

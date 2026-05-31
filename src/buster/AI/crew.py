@@ -1,16 +1,21 @@
-from pydantic import BaseModel
 from crewai import LLM, Agent, Crew, Process, Task
-from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
+from crewai.project import CrewBase, agent, crew, task
+from pydantic import BaseModel
+from settings import OLLAMA_BASE_URL, OLLAMA_MODEL
 
+# 0.0 = strict and deterministic, 1.0 = creative and unpredictable
 local_model = LLM(
-    model="ollama/qwen2.5:1.5b",
-    base_url="http://localhost:11434",
-    temperature=0.2,  # lower = more focused/deterministic output
+    model=OLLAMA_MODEL,
+    base_url=OLLAMA_BASE_URL,
+    temperature=0.2,
 )
 
 
-class IncidentEntry(BaseModel):
+# Template for Organiser Output
+# Ensures consistent structure for all bust entries
+# NEcessary for readiblity and database storage
+class BustEntry(BaseModel):
     title: str
     problem: str
     attempted_solutions: list[str]
@@ -26,6 +31,10 @@ class Recall:
     tasks_config = "config/recall_tasks.yaml"
     agents: list[BaseAgent]
     tasks: list[Task]
+
+    # @CrewBase replaces these strings with real dicts at runtime
+    # mypy doesn't know that, so we tell it to ignore the indexing on each call
+    # to avoid errors about 'str' not being subscriptable
 
     @agent
     def narrator(self) -> Agent:
@@ -60,7 +69,9 @@ class Buster:
     tasks_config = "config/bust_tasks.yaml"
     agents: list[BaseAgent]
     tasks: list[Task]
-    _task_callback = None
+    _task_callback = None  # Is set externally before kickoff to drive the loading
+
+    # Same deal as Recall — @CrewBase swaps strings for dicts, mypy can't see that
 
     @agent
     def processor(self) -> Agent:
@@ -88,7 +99,7 @@ class Buster:
     def organise(self) -> Task:
         return Task(
             config=self.tasks_config["organise"],  # type: ignore[index]
-            output_pydantic=IncidentEntry,
+            output_pydantic=BustEntry,
         )
 
     @crew
