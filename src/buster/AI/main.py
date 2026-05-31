@@ -1,20 +1,29 @@
-#!/usr/bin/env python
 import contextlib
 import io
 import logging
-import re
-from datetime import datetime
+import time
 from pathlib import Path
 
 from buster.AI.crew import Buster
 from buster.AI.ui import visual_loading
+from settings import BUSTS_DIR_NAME, BUST_PREFIX
 
-BUSTS_DIR = Path.cwd() / ".buster"
+BUSTS_DIR = Path.cwd() / BUSTS_DIR_NAME
+
+# loaded once at startup — filters noise words from AI-generated tags
+# edit word_filter.md to add or remove words (one per line, # for comments)
+_WORD_FILTER = {
+    line.strip()
+    for line in (Path(__file__).parent / "word_filter.md").read_text().splitlines()
+    if line.strip() and not line.startswith("#")
+}
 
 
+# 'Questionarie' for the user to fill about their bust
+# Outputs to an md file, for user review and possible editing
 def run(busts_dir: Path | None = None):
     if busts_dir is None:
-        busts_dir = Path.cwd() / ".buster"
+        busts_dir = Path.cwd() / BUSTS_DIR_NAME
 
     print("What project were you working on?")
     project = input("> ").strip()
@@ -34,8 +43,8 @@ def run(busts_dir: Path | None = None):
     print("\nDid it work? (yes/no)")
     resolved = input("> ").strip().lower()
 
-    entry = (  # How it's sent to the CrewAI, a single string with all the information
-        # for better processing and understanding
+    # Model will use template to parse the user's input and generate a bust entry
+    entry = (
         f"Project: {project}. "
         f"Issue: {issue}. "
         f"Solution(s) attempted: {solution}. "
@@ -45,8 +54,10 @@ def run(busts_dir: Path | None = None):
     print()
     on_task_done, finish = visual_loading(
         [
-            "We are now processing your bust report",  # Task "Process"
-            "We are now neatly organizing the information",  # Task "Organise"
+            # Shows during 'process' task:
+            "We are now processing your bust report",
+            # Shows during 'organize' task:
+            "We are now neatly organizing the information",
         ]
     )
 
@@ -67,6 +78,7 @@ def run(busts_dir: Path | None = None):
 
     finish()
 
+    # If model fails generation, skips saving and raises an error
     if result.pydantic is None:
         raise RuntimeError(
             "Failed to generate structured output. "
@@ -74,24 +86,22 @@ def run(busts_dir: Path | None = None):
         )
 
     data = result.pydantic.model_dump()
-    # Change accepted values here to support other resolved inputs (e.g. "y", "1")
+    # Booleans as true when input is "yes" or "y", false otherwise
+    # Edit to accept other inputs as true
     data["resolved"] = resolved in ("yes", "y")
 
+    # middleware: strip noise words from AI-generated tags before writing to MD
+    # anything after this point (user edits, save to DB) is untouched
+    data["tags"] = [tag for tag in data["tags"] if tag.lower() not in _WORD_FILTER]
+
     busts_dir.mkdir(parents=True, exist_ok=True)
-    slug = re.sub(r"[^a-z0-9]+", "_", data["title"].lower()).strip("_")[
-        :40
-    ]  # change [:40] to adjust max slug length
-    timestamp = datetime.now().strftime(
-        "%Y%m%d_%H%M%S"
-    )  # change format string to alter date style in filename
-    # Change prefix or structure below to alter the output .md filename.
-    # If you change the prefix ("bust_"), update the glob in CLI/main.py save --all accordingly.
-    filename = busts_dir / f"bust_{timestamp}_{slug}.md"
+    filename = busts_dir / f"{BUST_PREFIX}{int(time.time())}.md"
 
     resolved_str = "yes" if data["resolved"] else "no"
     solutions_md = "\n".join(f"- {s}" for s in data["attempted_solutions"])
     tags_str = ", ".join(data["tags"])
 
+    # Formats the structured data into markdown for user review and possible editing
     md = (
         f"# {data['title']}\n\n"
         f"**Resolved:** {resolved_str}\n\n"
@@ -101,6 +111,7 @@ def run(busts_dir: Path | None = None):
         f"## Tags\n{tags_str}\n"
     )
 
+    # Saves said markdown to a file, and prints path for user review
     filename.write_text(md)
     filepath = (
         filename.relative_to(Path.cwd())
@@ -108,7 +119,7 @@ def run(busts_dir: Path | None = None):
         else filename
     )
     print(f"\nBust saved to: {filepath}")
-    print("Review and edit it, then run: make save FILE=<path>")
+    print("Review and edit it, then run: buster save <path>")
 
 
 if __name__ == "__main__":

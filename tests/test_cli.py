@@ -7,53 +7,53 @@ cli_runner = CliRunner()
 
 def test_cli_db_creates_database(tmp_path, monkeypatch):
     """buster db creates the SQLite DB file and reports success
-    when the .buster directory already exists."""
-    buster_dir = tmp_path / ".buster"
-    buster_dir.mkdir()
+    when the .busts directory already exists."""
+    busts_dir = tmp_path / ".busts"
+    busts_dir.mkdir()
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(database, "DB_PATH", buster_dir / "buster.db")
+    monkeypatch.setattr(database, "DB_PATH", busts_dir / "busts.db")
 
     result = cli_runner.invoke(app, ["db"])
 
     assert result.exit_code == 0
-    assert (buster_dir / "buster.db").exists()
+    assert (busts_dir / "busts.db").exists()
     assert "success" in result.output.lower()
 
 
-def test_cli_db_missing_buster_dir(tmp_path, monkeypatch):
-    """buster db reports an error and exits cleanly when .buster does not exist."""
+def test_cli_db_missing_busts_dir(tmp_path, monkeypatch):
+    """buster db reports an error and exits cleanly when .busts does not exist."""
     monkeypatch.chdir(tmp_path)
 
     result = cli_runner.invoke(app, ["db"])
 
     assert result.exit_code == 0
     assert "please run" in result.output.lower() or "setup" in result.output.lower()
-    assert not (tmp_path / ".buster" / "buster.db").exists()
+    assert not (tmp_path / ".busts" / "busts.db").exists()
 
 
 def test_cli_setup_creates_directory_and_database(tmp_path, monkeypatch):
-    """buster setup creates .buster and the database when neither exists.
+    """buster setup creates .busts and the database when neither exists.
     Docker steps are skipped gracefully when Docker is not available."""
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(database, "DB_PATH", tmp_path / ".buster" / "buster.db")
+    monkeypatch.setattr(database, "DB_PATH", tmp_path / ".busts" / "busts.db")
 
     result = cli_runner.invoke(app, ["setup"])
 
     assert result.exit_code == 0
-    assert (tmp_path / ".buster").exists()
-    assert (tmp_path / ".buster" / "buster.db").exists()
+    assert (tmp_path / ".busts").exists()
+    assert (tmp_path / ".busts" / "busts.db").exists()
     assert "ready" in result.output.lower()
 
 
 def test_cli_setup_is_idempotent(tmp_path, monkeypatch):
     """Running buster setup twice reports existing resources as already present
     rather than failing or duplicating them."""
-    buster_dir = tmp_path / ".buster"
-    buster_dir.mkdir()
+    busts_dir = tmp_path / ".busts"
+    busts_dir.mkdir()
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(database, "DB_PATH", buster_dir / "buster.db")
+    monkeypatch.setattr(database, "DB_PATH", busts_dir / "busts.db")
 
-    cli_runner.invoke(app, ["setup"])   # first run — creates DB
+    cli_runner.invoke(app, ["setup"])  # first run — creates DB
     result = cli_runner.invoke(app, ["setup"])  # second run — should skip
 
     assert result.exit_code == 0
@@ -132,11 +132,11 @@ def test_cli_save_multiple_files(tmp_path, monkeypatch, tmp_db):
 
 
 def test_cli_save_all(tmp_path, monkeypatch, tmp_db):
-    """buster save --all saves every bust_*.md file in .buster."""
+    """buster save --all saves every bust_*.md file in .busts."""
     import sqlite3
 
-    buster_dir = tmp_path / ".buster"
-    buster_dir.mkdir()
+    busts_dir = tmp_path / ".busts"
+    busts_dir.mkdir()
     monkeypatch.chdir(tmp_path)
 
     md = (
@@ -147,7 +147,9 @@ def test_cli_save_all(tmp_path, monkeypatch, tmp_db):
         "## Tags\ntest\n"
     )
     for i in range(3):
-        (buster_dir / f"bust_2026_issue_{i}.md").write_text(md.format(title=f"Issue {i}"))
+        (busts_dir / f"bust_2026_issue_{i}.md").write_text(
+            md.format(title=f"Issue {i}")
+        )
 
     result = cli_runner.invoke(app, ["save", "--all"])
 
@@ -159,9 +161,9 @@ def test_cli_save_all(tmp_path, monkeypatch, tmp_db):
 
 
 def test_cli_save_all_empty_buster(tmp_path, monkeypatch, tmp_db):
-    """buster save --all reports nothing to save when .buster has no bust files."""
-    buster_dir = tmp_path / ".buster"
-    buster_dir.mkdir()
+    """buster save --all reports nothing to save when .busts has no bust files."""
+    busts_dir = tmp_path / ".busts"
+    busts_dir.mkdir()
     monkeypatch.chdir(tmp_path)
 
     result = cli_runner.invoke(app, ["save", "--all"])

@@ -1,5 +1,6 @@
-# Stop Words
-# Common words filtered out during keyword extraction.
+# World Filter
+# Common words to improve keyword extraction
+# Effectively improving recall quality
 
 a
 an

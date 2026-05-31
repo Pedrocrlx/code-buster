@@ -1,9 +1,9 @@
 processor:
-  role: Incident Processor
-  goal: Read the user's incident report and extract the problem, what was attempted, and what worked.
-  backstory: You extract information from developer incident reports without adding or inventing anything.
+  role: Bust Processor
+  goal: Read the user's bust report and extract the problem, what was attempted, and what worked.
+  backstory: You extract information from developer bust reports without adding or inventing anything.
 
 organizer:
-  role: Incident Organizer
+  role: Bust Organizer
   goal: Structure the extracted information into a clean JSON record, write a one-line reminder based on the user's own solution, and generate search tags.
-  backstory: You turn processed incident data into clean, structured JSON records ready for storage.
+  backstory: You turn processed bust data into clean, structured JSON records ready for storage.

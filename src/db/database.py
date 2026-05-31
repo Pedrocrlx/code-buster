@@ -1,26 +1,15 @@
 import json
 import os
 import sqlite3
-from datetime import date, datetime
 from pathlib import Path
+
+from settings import BUSTS_DIR_NAME, DB_FILENAME, RECALL_MIN_KEYWORD_MATCHES
 
 DB_PATH = (
     Path(os.environ["BUSTER_DB_PATH"])
     if "BUSTER_DB_PATH" in os.environ
-    else Path.cwd() / ".buster" / "buster.db"
+    else Path.cwd() / BUSTS_DIR_NAME / DB_FILENAME
 )
-
-_STOP_WORDS_FILE = Path(__file__).parent / "stop_words.md"
-_STOP_WORDS = {
-    line.strip()
-    for line in _STOP_WORDS_FILE.read_text().splitlines()
-    if line.strip() and not line.startswith("#")
-}
-
-
-def extract_keywords(text: str) -> list[str]:
-    # Change > 2 to raise the minimum word length (e.g. > 3 drops two-letter words like "db")
-    return [w for w in text.lower().split() if w not in _STOP_WORDS and len(w) > 2]
 
 
 def init_db() -> None:
@@ -33,21 +22,19 @@ def init_db() -> None:
                 attempted_solutions TEXT NOT NULL,
                 lesson              TEXT NOT NULL,
                 tags                TEXT NOT NULL,
-                resolved            INTEGER NOT NULL,
-                created_at          TEXT NOT NULL
+                resolved            INTEGER NOT NULL
             )
         """)
 
 
+# Fetches all busts from the DB and formats them into a readable string
 def fetch_all_busts() -> str:
     init_db()
     with sqlite3.connect(DB_PATH) as connection:
         connection.row_factory = sqlite3.Row
-        rows = connection.execute(
-            "SELECT * FROM busts ORDER BY created_at DESC"
-        ).fetchall()
+        rows = connection.execute("SELECT * FROM busts ORDER BY id DESC").fetchall()
     if not rows:
-        return "No past incidents found."
+        return "No past busts found."
     parts = []
     for row in rows:
         solutions = ", ".join(json.loads(row["attempted_solutions"]))
@@ -55,7 +42,6 @@ def fetch_all_busts() -> str:
         resolved = "yes" if row["resolved"] else "no"
         parts.append(
             f"#{row['id']} — {row['title']}\n"
-            f"Date: {row['created_at']}\n"
             f"Problem: {row['problem']}\n"
             f"Solutions tried: {solutions}\n"
             f"Lesson: {row['lesson']}\n"
@@ -65,18 +51,12 @@ def fetch_all_busts() -> str:
     return "\n---\n".join(parts)
 
 
-# Minimum number of query keywords that must match a bust's tags to surface it.
-# Raise to require stricter matches; lower to 1 for broader, noisier recall.
-RECALL_MIN_KEYWORD_MATCHES = 2
-
-
+# Searches busts by tags, using a simple keyword match with a threshold for relevance
 def search_by_tags(keywords: list[str]) -> str:
     init_db()
     with sqlite3.connect(DB_PATH) as connection:
         connection.row_factory = sqlite3.Row
-        rows = connection.execute(
-            "SELECT * FROM busts ORDER BY created_at DESC"
-        ).fetchall()
+        rows = connection.execute("SELECT * FROM busts ORDER BY id DESC").fetchall()
     if not rows:
         return "No past busts found."
     threshold = max(1, min(RECALL_MIN_KEYWORD_MATCHES, len(keywords)))
@@ -92,7 +72,6 @@ def search_by_tags(keywords: list[str]) -> str:
             solutions = ", ".join(json.loads(row["attempted_solutions"]))
             matches.append(
                 f"#{row['id']} — {row['title']}\n"
-                f"Date: {row['created_at']}\n"
                 f"Problem: {row['problem']}\n"
                 f"Solutions tried: {solutions}\n"
                 f"Lesson: {row['lesson']}\n"
@@ -102,27 +81,21 @@ def search_by_tags(keywords: list[str]) -> str:
     return "\n---\n".join(matches) if matches else "No relevant busts found."
 
 
+# Saves the bust md file to the SQLite DB, exactly as it is written by the user
 def save_bust(data: dict) -> int:
     init_db()
-    # Merge model-generated tags with keywords extracted from title and problem
-    # so recall can find busts by the words users naturally type
-    # Normalise model tags: split underscored compounds into individual words
-    normalised = [w for tag in data["tags"] for w in tag.replace("_", " ").split()]
-    extra = extract_keywords(f"{data['title']} {data['problem']}")
-    merged_tags = list(dict.fromkeys(normalised + extra))  # dedup, preserve order
     params = {
         **data,
         "attempted_solutions": json.dumps(data["attempted_solutions"]),
-        "tags": json.dumps(merged_tags),
+        "tags": json.dumps(data["tags"]),
         "resolved": int(data["resolved"]),
-        "created_at": datetime.now().isoformat(),
     }
     with sqlite3.connect(DB_PATH) as connection:
         cursor = connection.execute(
             """INSERT INTO busts (title, problem, attempted_solutions,
-            lesson, tags, resolved, created_at)
+            lesson, tags, resolved)
                VALUES (:title, :problem, :attempted_solutions, :lesson,
-            :tags, :resolved, :created_at)""",
+            :tags, :resolved)""",
             params,
         )
         return cursor.lastrowid

@@ -3,17 +3,20 @@ import threading
 import time
 
 
+# UX functions for CLI
 def visual_loading(messages: list[str]):
     terminal = sys.stdout
     task_events = [threading.Event() for _ in messages]
     progress_done = threading.Event()
 
+    # Custom callback to signal task completion from CrewAI tasks
     def on_task_done(task_output):
         for task_event in task_events:
             if not task_event.is_set():
                 task_event.set()
                 break
 
+    # Custom animated loading spinner wheel
     def visual_processing():
         spinning_wheel = "|/-\\"
         for message, task_event in zip(messages, task_events):

@@ -1,4 +1,3 @@
-from db.database import extract_keywords
 from save import parse_md
 
 
@@ -25,38 +24,9 @@ def test_parse_md_fields():
 
 def test_parse_md_resolved_flag():
     """parse_md maps 'yes'/'no' to True/False for the resolved field."""
-    base = "# T\n\n**Resolved:** yes\n\n## Problem\np\n\n## Solutions Tried\n- s\n\n## Lesson\nl\n\n## Tags\nt\n"
+    base = (
+        "# T\n\n**Resolved:** yes\n\n## Problem\np\n\n"
+        "## Solutions Tried\n- s\n\n## Lesson\nl\n\n## Tags\nt\n"
+    )
     assert parse_md(base)["resolved"] is True
     assert parse_md(base.replace("yes", "no"))["resolved"] is False
-
-
-def test_extract_keywords_filters_stop_words():
-    """Every word in the stop-word list is removed from keyword output."""
-    stop_sample = ["the", "is", "and", "with", "from", "should"]
-    for word in stop_sample:
-        assert word not in extract_keywords(word), (
-            f"Stop word '{word}' was not filtered out"
-        )
-
-    result = extract_keywords("the docker daemon is not running")
-    assert "the" not in result
-    assert "is" not in result
-    assert "docker" in result
-    assert "daemon" in result
-    assert "running" in result
-
-
-def test_extract_keywords_filters_short_words():
-    """Words of 2 characters or fewer are dropped."""
-    assert extract_keywords("go to db") == []
-    assert "to" not in extract_keywords("connect to database")
-    assert "db" not in extract_keywords("db connection failed")
-
-
-def test_extract_keywords_lowercases_input():
-    """Input is normalised to lowercase before filtering."""
-    result = extract_keywords("Docker Daemon RUNNING")
-    assert "docker" in result
-    assert "daemon" in result
-    assert "running" in result
-    assert "Docker" not in result

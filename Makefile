@@ -14,7 +14,7 @@ help:
 	@echo "  lint            Runs ruff formatter and linter"
 	@echo "  pre-commit      Runs pre-commit hooks across all files"
 	@echo "  test            Runs full test suite using pytest"
-	@echo "  seed            Writes 32 bust .md files to .buster/ for manual review"
+	@echo "  seed            Writes 32 bust .md files to .busts/ for manual review"
 	@echo ""
 	@echo " - Model & Containers - "
 	@echo "  start-model     Starts Ollama container and runs AI Model"
@@ -88,7 +88,7 @@ clean:
 ## Remove the app (buster) data directory
 ## Includes all stored busts and settings (aka reset the app to fresh state)
 clean-buster:
-	rm -rf .buster
+	rm -rf .busts
 
 ## Remove everything
 ## Previous clean commands + the virtual environment directory (.venv)

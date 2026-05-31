@@ -1,18 +1,28 @@
 #!/usr/bin/env python
-"""Seed .buster with realistic developer incidents as .md files.
 
-Runs each incident through the Buster crew and writes a bust_*.md file to
-.buster/ for review. Nothing is saved to the database automatically.
+# Bust Problems to feed the Buster CrewAI
+# Features realistic data, varied issues and solutions
+# Used for manual reviewing of AI output (parsing + structuring)
+"""Seed .busts with realistic developer busts as .md files.
+
+Runs each bust through the Buster crew and writes a bust_*.md file to
+.busts/ for review. Nothing is saved to the database automatically.
 Once you are happy with the output, run:  buster save --all
 """
 
-import re
-from datetime import datetime
+import time
 from pathlib import Path
 
 from buster.AI.crew import Buster
+from settings import BUSTS_DIR_NAME, BUST_PREFIX
 
-INCIDENTS = [
+_WORD_FILTER = {
+    line.strip()
+    for line in (Path(__file__).parent / "word_filter.md").read_text().splitlines()
+    if line.strip() and not line.startswith("#")
+}
+
+BUSTS = [
     {
         "entry": (
             "Project: devcontainer setup. "
@@ -387,33 +397,36 @@ INCIDENTS = [
 
 
 def main() -> None:
-    busts_dir = Path.cwd() / ".buster"
+    busts_dir = Path.cwd() / BUSTS_DIR_NAME
     busts_dir.mkdir(parents=True, exist_ok=True)
 
-    total = len(INCIDENTS)
+    total = len(BUSTS)
     written = 0
     failed = 0
 
-    print(f"Processing {total} incidents through the Buster crew...\n")
+    print(f"Processing {total} busts through the Buster crew...\n")
 
-    for i, incident in enumerate(INCIDENTS, 1):
+    for i, bust in enumerate(BUSTS, 1):
         print(f"[{i}/{total}] Processing...", end=" ", flush=True)
         try:
-            result = Buster().crew().kickoff(inputs={"entry": incident["entry"]})
+            result = Buster().crew().kickoff(inputs={"entry": bust["entry"]})
             if result.pydantic is None:
                 print("SKIPPED (model did not return structured output)")
                 failed += 1
                 continue
 
             data = result.pydantic.model_dump()
-            data["resolved"] = incident["resolved"]
+            data["resolved"] = bust["resolved"]
+
+            # same middleware as main.py — filter before writing to MD
+            data["tags"] = [
+                tag for tag in data["tags"] if tag.lower() not in _WORD_FILTER
+            ]
 
             resolved_str = "yes" if data["resolved"] else "no"
             solutions_md = "\n".join(f"- {s}" for s in data["attempted_solutions"])
             tags_str = ", ".join(data["tags"])
-            slug = re.sub(r"[^a-z0-9]+", "_", data["title"].lower()).strip("_")[:40]
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filepath = busts_dir / f"bust_{timestamp}_{slug}.md"
+            filepath = busts_dir / f"{BUST_PREFIX}{int(time.time())}.md"
 
             filepath.write_text(
                 f"# {data['title']}\n\n"
@@ -430,7 +443,7 @@ def main() -> None:
             print(f"ERROR — {e}")
             failed += 1
 
-    print(f"\nDone. {written} files written to .buster/, {failed} skipped.")
+    print(f"\nDone. {written} files written to {BUSTS_DIR_NAME}/, {failed} skipped.")
     if written:
         print("Review the files, then run:  buster save --all")
 

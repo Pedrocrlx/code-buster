@@ -8,24 +8,31 @@ from buster.AI.main import run as bust_run
 from buster.AI.recall import run as recall_run
 from buster.AI.save import parse_md
 from db.database import init_db, save_bust
+from settings import BUSTS_DIR_NAME, BUST_PREFIX, DB_FILENAME, OLLAMA_MODEL_NAME
 
 app = typer.Typer(help="Code Buster CLI")
+
+
+@app.command(name="help")
+def show_help(ctx: typer.Context):
+    """Show available commands."""
+    typer.echo(ctx.parent.get_help())
 
 
 @app.command(name="setup")
 def setup():
     """
-    First-time setup: create the .buster directory, start Ollama,
-    pull the qwen2.5:1.5b model, and initialise the database.
+    First-time setup: create the .busts directory, start Ollama,
+    pull the model, and initialise the database.
     Safe to re-run — already-completed steps are skipped.
     """
-    target_dir = Path.cwd() / ".buster"
-    db_path = target_dir / "buster.db"
+    target_dir = Path.cwd() / BUSTS_DIR_NAME
+    db_path = target_dir / DB_FILENAME
 
     typer.echo("Setting up Code Buster...\n")
 
-    # Step 1 — .buster directory
-    typer.echo("[1/4] Creating .buster directory...")
+    # Step 1 — busts directory
+    typer.echo(f"[1/4] Creating {BUSTS_DIR_NAME} directory...")
     if target_dir.exists():
         typer.secho(f"      Already exists at {target_dir}", fg=typer.colors.YELLOW)
     else:
@@ -57,11 +64,20 @@ def setup():
         )
 
     # Step 3 — model pull (output not suppressed — can take several minutes)
-    # Change model name here if switching models. Keep in sync with OLLAMA_MODEL default in crew.py.
-    typer.echo("[3/4] Pulling qwen2.5:1.5b model (this may take a few minutes)...")
+    typer.echo(
+        f"[3/4] Pulling {OLLAMA_MODEL_NAME} model (this may take a few minutes)..."
+    )
     try:
         subprocess.run(
-            ["docker", "compose", "exec", "ollama", "ollama", "pull", "qwen2.5:1.5b"],
+            [
+                "docker",
+                "compose",
+                "exec",
+                "ollama",
+                "ollama",
+                "pull",
+                OLLAMA_MODEL_NAME,
+            ],
             check=True,
         )
         typer.secho("      Model ready.", fg=typer.colors.GREEN)
@@ -76,7 +92,7 @@ def setup():
             fg=typer.colors.YELLOW,
         )
         typer.secho(
-            "      Skipping. Run `ollama pull qwen2.5:1.5b` manually if needed.",
+            f"      Skipping. Run `ollama pull {OLLAMA_MODEL_NAME}` if needed.",
             fg=typer.colors.YELLOW,
         )
 
@@ -96,7 +112,7 @@ def setup():
 
     typer.echo("")
     typer.secho(
-        "Code Buster is ready. Run `buster bust` to log your first incident.",
+        "Code Buster is ready. Run `buster bust` to log your first bust.",
         fg=typer.colors.GREEN,
     )
 
@@ -114,42 +130,45 @@ def init(
     ),
 ):
     """
-    Create the .buster directory locally or in the user home.
+    Create the .busts directory locally or in the user home.
     Options globally: --global -g
     Option locally: -p
-    Pull the ollama service
-    and the qwen2.5 model using Docker Compose.
+    Pull the ollama service and the model using Docker Compose.
     """
     if is_global:
-        target_dir = Path.home() / ".buster"
+        target_dir = Path.home() / BUSTS_DIR_NAME
         context = "on user"
     else:
-        target_dir = Path.cwd() / ".buster"
+        target_dir = Path.cwd() / BUSTS_DIR_NAME
         context = "on context"
 
     try:
         if target_dir.exists():
             typer.secho(
-                f"Directory .buster already exists {context} on: {target_dir}",
+                f"Directory {BUSTS_DIR_NAME} already exists {context} on: {target_dir}",
                 fg=typer.colors.YELLOW,
             )
         pull_ollama_service = ["docker", "compose", "up", "-d", "ollama"]
         subprocess.run(pull_ollama_service, check=True)
 
-        run_qwen2_5_model = [
-            "docker",
-            "compose",
-            "exec",
-            "ollama",
-            "ollama",
-            "pull",
-            "qwen2.5:1.5b",
-        ]
-        subprocess.run(run_qwen2_5_model, capture_output=True, text=True, check=True)
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "exec",
+                "ollama",
+                "ollama",
+                "pull",
+                OLLAMA_MODEL_NAME,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
 
         target_dir.mkdir(parents=True, exist_ok=True)
         typer.secho(
-            f"Success: Directory .buster created {context} on: {target_dir}",
+            f"Success: Directory {BUSTS_DIR_NAME} created {context} on: {target_dir}",
             fg=typer.colors.GREEN,
         )
 
@@ -169,10 +188,10 @@ def init(
 @app.command(name="db")
 def create_db():
     """
-    Create the SQLite database file in the .buster directory.
+    Create the SQLite database file in the .busts directory.
     """
-    target_dir = Path.cwd() / ".buster"
-    db_path = target_dir / "buster.db"
+    target_dir = Path.cwd() / BUSTS_DIR_NAME
+    db_path = target_dir / DB_FILENAME
 
     if not target_dir.exists():
         typer.secho(
@@ -206,10 +225,10 @@ def record_bust():
     Run bust into agents (CrewAI) and output markdown file.
     """
     try:
-        busts_dir = Path.cwd() / ".buster"
+        busts_dir = Path.cwd() / BUSTS_DIR_NAME
         if not busts_dir.exists():
             typer.secho(
-                f"Error: .buster directory not found at {busts_dir}",
+                f"Error: {BUSTS_DIR_NAME} directory not found at {busts_dir}",
                 fg=typer.colors.RED,
                 err=True,
             )
@@ -232,39 +251,40 @@ def record_save(
     all_: bool = typer.Option(
         False,
         "--all",
-        help="Save every bust_*.md file found in the .buster directory.",
+        help=f"Save every {BUST_PREFIX}*.md file found in {BUSTS_DIR_NAME} directory.",
     ),
 ):
     """
     Parse bust markdown file(s) and save them to the database.
 
     \b
-    Single file:    buster save .buster/bust_<timestamp>_<slug>.md
+    Single file:    buster save .busts/bust_<timestamp>.md
     Multiple files: buster save file1.md file2.md file3.md
-    All in .buster: buster save --all
+    All in .busts:  buster save --all
     """
     if not files and not all_:
         typer.secho(
-            "Provide at least one file, or use --all to save every bust in .buster.",
+            f"Provide at least one file,\
+            or use --all to save every bust in {BUSTS_DIR_NAME}.",
             fg=typer.colors.RED,
             err=True,
         )
         raise typer.Exit(1)
 
     if all_:
-        buster_dir = Path.cwd() / ".buster"
-        if not buster_dir.exists():
+        busts_dir = Path.cwd() / BUSTS_DIR_NAME
+        if not busts_dir.exists():
             typer.secho(
-                "No .buster directory found. Run `buster setup` first.",
+                f"No {BUSTS_DIR_NAME} directory found. Run `buster setup` first.",
                 fg=typer.colors.RED,
                 err=True,
             )
             raise typer.Exit(1)
-        # Glob pattern must match the filename prefix written by main.py ("bust_").
-        # If you change the prefix there, update this pattern to match.
-        targets = sorted(buster_dir.glob("bust_*.md"))
+        targets = sorted(busts_dir.glob(f"{BUST_PREFIX}*.md"))
         if not targets:
-            typer.secho("No bust files found in .buster.", fg=typer.colors.YELLOW)
+            typer.secho(
+                f"No bust files found in {BUSTS_DIR_NAME}.", fg=typer.colors.YELLOW
+            )
             return
     else:
         targets = list(files)
@@ -302,7 +322,7 @@ def record_save(
 @app.command(name="recall")
 def search_busts():
     """
-    Search past incidents for a similar problem.
+    Search past busts for a similar problem.
     """
     try:
         recall_run()

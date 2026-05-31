@@ -1,6 +1,7 @@
 import re
 
 
+# Parses the markdown file back into a dict to save it to DB
 def parse_md(text: str) -> dict:
     def section(name: str) -> str:
         match = re.search(rf"## {name}\n(.*?)(?=\n## |\Z)", text, re.DOTALL)
@@ -12,8 +13,7 @@ def parse_md(text: str) -> dict:
     resolved_match = re.search(r"\*\*Resolved:\*\*\s*(\w+)", text)
     resolved_str = resolved_match.group(1).lower() if resolved_match else "no"
 
-    # Section names below must match the ## headings written by main.py.
-    # If you rename a section in one place, rename it in both.
+    # Extracts solutions from 'Solutions Tried', breaking them into a list
     solutions_block = section("Solutions Tried")
     solutions = [
         line.lstrip("- ").strip()
@@ -30,6 +30,5 @@ def parse_md(text: str) -> dict:
         "attempted_solutions": solutions,
         "lesson": section("Lesson"),
         "tags": tags,
-        # Change accepted values here to match whatever main.py writes for resolved
         "resolved": resolved_str in ("yes", "y"),
     }
