@@ -1,58 +1,64 @@
-.PHONY: quick-start install lint pre-commit test seed start-model stop-model down clean clean-buster full-clean help
+.PHONY: quick-start install \
+lint pre-commit test seed \
+start-model stop-model down \
+clean clean-buster full-clean help
 
 ## Show available commands in this Makefile
 help:
 	@echo ""
 	@echo " - Setup & Installation - "
 	@echo "  quick-start     Preps everything for app to run for the 1st time"
-	@echo "  install         Reinstalls Buster CLI after any source change"
+	@echo "  install         Reinstalls buster CLI after changes in source"
 	@echo ""
 	@echo " - Code Quality & Testing - "
 	@echo "  lint            Runs ruff formatter and linter"
-	@echo "  pre-commit      Runs pre-commit hooks"
-	@echo "  test            Runs the full test suite"
-	@echo "  seed            Seeds the database with example busts"
+	@echo "  pre-commit      Runs pre-commit hooks across all files"
+	@echo "  test            Runs full test suite using pytest"
+	@echo "  seed            Writes 32 bust .md files to .buster/ for manual review"
 	@echo ""
 	@echo " - Model & Containers - "
-	@echo "  start-model     Starts Ollama container and runs qwen2.5:1.5b"
+	@echo "  start-model     Starts Ollama container and runs AI Model"
 	@echo "  stop-model      Stops the Ollama container"
 	@echo "  down            Stops all containers"
 	@echo ""
 	@echo " - Cleanup - "
 	@echo "  clean           Removes python cache and build artefacts"
-	@echo "  clean-buster    Removes .buster directory and all stored data"
-	@echo "  full-clean      Removes everything, including .venv"
+	@echo "  clean-buster    Removes user data directory, including DB"
+	@echo "  full-clean      Removes everything, for a fresh start"
 	@echo ""
 
 # Setup & Installation Commands
 
-## Quick Start: Syncs dependencies, installs the CLI tool, and runs the first-time setup
+## Quick Start: Syncs dependencies, installs CLI tool, and runs 1st time setup
 quick-start:
 	uv sync --group dev
 	uv tool install .
 	buster setup
 
-## Reinstall the buster CLI tool locally (use after making changes to source code)
+## Reinstalls buster CLI
+## Run after making changes to files in source (src/)
 install:
 	uv tool install .
 
 # Code Quality & Testing Commands
 
-## Run ruff formatter and linter (cache removed to ensure all files are checked)
+## Runs ruff formatter + linter (cache removed to ensure all files are checked)
 lint:
 	rm -rf .ruff_cache
 	uv run ruff format && uv run ruff check
 
-## Run all pre-commit hooks across all files (use before committing to ensure code quality)
+## Runs all pre-commit hooks across all files 
+## Use before committing to git to ensure code quality
 pre-commit:
 	uv run pre-commit run --all-files
 
-## Run full test suite with pytest — Ollama tests skipped if model not running
-## Run 'make start-model' first to include the full pipeline tests
+## Runs full test suite with pytest
+## Ollama tests skipped if model is not running
 test:
 	uv run pytest tests/ -v
 
-## Seed the database with 32 example incidents via the Buster crew
+## Automatically generates 32 busts for seeding purposes
+## Follows normal bust generation process, useful to review generation quality
 seed:
 	cd src/buster/AI && uv run seed.py
 
@@ -73,14 +79,19 @@ down:
 
 # Cleanup Commands
 
-## Remove cache and build artefacts (ruff, python, pytest caches and build dirs)
+## Remove cache and build artefacts
+## Includes ruff, python, pytest caches and build dirs
 clean:
-	rm -rf .ruff_cache __pycache__ src/code_buster.egg-info build/ dist/ .pytest_cache
+	rm -rf .ruff_cache __pycache__ src/code_buster.egg-info \
+	build/ dist/ .pytest_cache
 
-## Remove the app (buster) data directory, including all stored busts and settings (aka reset the app to fresh state)
+## Remove the app (buster) data directory
+## Includes all stored busts and settings (aka reset the app to fresh state)
 clean-buster:
 	rm -rf .buster
 
-## Remove everything: venv, caches, build artefacts, and stored data (use before a fresh quick-start)
-full-clean:
-	rm -rf .venv .ruff_cache __pycache__ src/code_buster.egg-info build/ dist/ .pytest_cache .buster
+## Remove everything
+## Previous clean commands + the virtual environment directory (.venv)
+## Use for complete reset, as if freshly cloned with no setup done
+full-clean: clean clean-buster
+	rm -rf .venv

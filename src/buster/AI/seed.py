@@ -1,8 +1,16 @@
 #!/usr/bin/env python
-"""Seed database with realistic developer incidents through Buster crew."""
+"""Seed .buster with realistic developer incidents as .md files.
+
+Runs each incident through the Buster crew and writes a bust_*.md file to
+.buster/ for review. Nothing is saved to the database automatically.
+Once you are happy with the output, run:  buster save --all
+"""
+
+import re
+from datetime import datetime
+from pathlib import Path
 
 from buster.AI.crew import Buster
-from db.database import save_bust
 
 INCIDENTS = [
     {
@@ -379,11 +387,14 @@ INCIDENTS = [
 
 
 def main() -> None:
+    busts_dir = Path.cwd() / ".buster"
+    busts_dir.mkdir(parents=True, exist_ok=True)
+
     total = len(INCIDENTS)
-    saved = 0
+    written = 0
     failed = 0
 
-    print(f"Seeding {total} incidents through the Buster crew...\n")
+    print(f"Processing {total} incidents through the Buster crew...\n")
 
     for i, incident in enumerate(INCIDENTS, 1):
         print(f"[{i}/{total}] Processing...", end=" ", flush=True)
@@ -393,16 +404,35 @@ def main() -> None:
                 print("SKIPPED (model did not return structured output)")
                 failed += 1
                 continue
+
             data = result.pydantic.model_dump()
             data["resolved"] = incident["resolved"]
-            bust_id = save_bust(data)
-            print(f"Saved as Bust #{bust_id} — {data['title']}")
-            saved += 1
+
+            resolved_str = "yes" if data["resolved"] else "no"
+            solutions_md = "\n".join(f"- {s}" for s in data["attempted_solutions"])
+            tags_str = ", ".join(data["tags"])
+            slug = re.sub(r"[^a-z0-9]+", "_", data["title"].lower()).strip("_")[:40]
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filepath = busts_dir / f"bust_{timestamp}_{slug}.md"
+
+            filepath.write_text(
+                f"# {data['title']}\n\n"
+                f"**Resolved:** {resolved_str}\n\n"
+                f"## Problem\n{data['problem']}\n\n"
+                f"## Solutions Tried\n{solutions_md}\n\n"
+                f"## Lesson\n{data['lesson']}\n\n"
+                f"## Tags\n{tags_str}\n"
+            )
+
+            print(f"Written — {filepath.name}")
+            written += 1
         except Exception as e:
             print(f"ERROR — {e}")
             failed += 1
 
-    print(f"\nDone. {saved} saved, {failed} skipped.")
+    print(f"\nDone. {written} files written to .buster/, {failed} skipped.")
+    if written:
+        print("Review the files, then run:  buster save --all")
 
 
 if __name__ == "__main__":
