@@ -1,29 +1,48 @@
 [project]
 name = "code-buster"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.1.9"
+description = "Code Buster CLI - Helping developers everyday"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "crewai>=0.5.0",
-    "fastapi[standard]>=0.128.8",
-    "httpx>=0.28.1",
-    "sqlmodel>=0.0.38",
     "typer>=0.23.1",
-    "uvicorn>=0.39.0",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["src/buster/AI", "tests", "src"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.uv]
+package = true
 
 [tool.ruff.lint]
 select = ["E", "F"]
 ignore = ["F401"]
+
+[tool.ruff]
+src = ["src"]
+
+[tool.setuptools]
+py-modules = ["settings"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["config/*.yaml", "word_filter.md"]
 
 [tool.ruff.format]
 indent-style = "space"
 quote-style = "double"
 line-ending = "lf"
 
+[project.scripts]
+buster = "CLI.main:app"
+
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "pre-commit>=4.3.0",
     "pytest>=8.4.2",
     "ruff>=0.15.12",

@@ -2,3 +2,12 @@ __pycache__/
 .ruff_cache/
 .venv/
 .env
+
+# Ignore the .buster directory, which is used for storing the tool's configuration and data.
+.buster/
+.claude/
+models/
+buster/output/
+*.db
+build/
+code_buster.egg-info/

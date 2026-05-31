@@ -1,0 +1,19 @@
+narrate:
+  description: >
+    The developer's query: {query}
+
+    Past busts retrieved from the knowledge base:
+
+    {matches}
+
+    Rules:
+    - If the busts text says "No relevant busts found.", reply only with: "Nothing similar in your knowledge base yet."
+    - Otherwise, for each bust write 2-3 sentences: what the problem was, what was tried, and what worked.
+    - Use natural language. Do NOT include raw bust data, structured fields, bullet points, or copied text.
+    - Do NOT invent details that are not in the busts.
+  expected_output: >
+    A short conversational paragraph per bust. Plain prose only.
+    Example: "You had a Docker daemon issue inside a devcontainer. You tried restarting Docker Desktop and
+    checking the config, and mounting the Docker socket from the host is what fixed it."
+    If nothing matched, say only: "Nothing similar in your knowledge base yet."
+  agent: narrator
