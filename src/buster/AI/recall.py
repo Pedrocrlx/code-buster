@@ -1,21 +1,23 @@
-#!/usr/bin/env python
 import contextlib
 import io
 import logging
-from datetime import date
 
 from buster.AI.crew import Recall
 from buster.AI.ui import visual_loading
-from db.database import extract_keywords, search_by_tags
+from db.database import search_by_tags
 
 
+# Function to filter busts based on user query, using keywords for matching
 def filter_busts(query: str) -> str:
-    keywords = extract_keywords(query)
+    keywords = query.lower().split()
     if not keywords:
         return "No relevant busts found."
     return search_by_tags(keywords)
 
 
+# Questions the user to describe their current problem
+# Searches the DB (knowledge base) for relevant past busts based on keywords
+# Fails if no relevant busts are found, prompting user to add some with `buster bust`
 def run():
     print("What problem are you facing right now?")
     query = input("> ").strip()
@@ -47,7 +49,6 @@ def run():
                 inputs={
                     "query": query,
                     "matches": matches,
-                    "today": date.today().isoformat(),
                 }
             )
     except Exception:

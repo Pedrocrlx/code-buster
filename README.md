@@ -1,6 +1,6 @@
 # Code Buster
 
-A local-first CLI tool for developers to log coding incidents and recall past solutions — powered by AI agents running fully offline via Ollama. No data leaves your machine.
+A local-first CLI tool for developers to log coding busts and recall past solutions — powered by AI agents running fully offline via Ollama. No data leaves your machine.
 
 ## Tech Stack
 
@@ -33,22 +33,23 @@ A local-first CLI tool for developers to log coding incidents and recall past so
 │                    │     │                     │
 │  processor agent   │     │  narrator agent     │
 │  organizer agent   │     │                     │
-│  → IncidentEntry   │     │  → prose narration  │
+│  → BustEntry       │     │  → prose narration  │
 │    (Pydantic)      │     │                     │
 └─────────┬──────────┘     └──────────┬──────────┘
           │                            │
+     word_filter.md                    │
+     (tag middleware)                  │
           │        ┌───────────────────┘
           ▼        ▼
 ┌──────────────────────────────────────────────────────┐
 │                 Data Layer  (SQLite)                  │
 │  save_bust · fetch_all_busts · search_by_tags        │
-│  extract_keywords · stop-word filtering              │
 └──────────────────────────────────────────────────────┘
 ```
 
-**Bust flow** — the developer describes an incident at the CLI. The Buster crew runs two agents in sequence: `processor` extracts the problem and solutions from free text; `organizer` structures them into a validated Pydantic model. The result is written as a `.md` file for the developer to review, then saved to SQLite via `buster save`.
+**Bust flow** — the developer describes a bust at the CLI. The Buster crew runs two agents in sequence: `processor` extracts the problem and solutions from free text; `organizer` structures them into a validated Pydantic model. Before writing to disk, `word_filter.md` strips noise words from the AI-generated tags. The result is written as a `.md` file for the developer to review and edit, then saved to SQLite verbatim via `buster save`.
 
-**Recall flow** — the developer describes a current problem. `extract_keywords` strips stop words and searches the database by tag overlap. Matching incidents are passed to the Recall crew's `narrator` agent, which produces a short conversational summary of what happened before and what worked.
+**Recall flow** — the developer describes a current problem. The query is split into keywords and matched against stored bust tags. Matching busts are passed to the Recall crew's `narrator` agent, which produces a short conversational summary of what happened before and what worked.
 
 ---
 
@@ -69,12 +70,12 @@ uv sync --group dev
 uv tool install .
 ```
 
-**2. Run first-time setup** (creates `.buster` dir, starts Ollama, pulls the model, initialises the database):
+**2. Run first-time setup** (creates `.busts` dir, starts Ollama, pulls the model, initialises the database):
 ```bash
 buster setup
 ```
 
-**3. Log your first incident:**
+**3. Log your first bust:**
 ```bash
 buster bust
 ```
@@ -90,15 +91,15 @@ buster recall
 
 | Command | Description |
 |---|---|
-| `buster setup` | First-time setup: creates `.buster`, starts Ollama, pulls model, initialises DB |
-| `buster bust` | Log a new coding incident via AI agents, outputs a `.md` file |
+| `buster setup` | First-time setup: creates `.busts`, starts Ollama, pulls model, initialises DB |
+| `buster bust` | Log a new bust via AI agents, outputs a `.md` file for review |
 | `buster save <file> [file2 ...]` | Save one or more bust `.md` files to the database |
-| `buster save --all` | Save every `bust_*.md` file found in `.buster` |
-| `buster recall` | Search past incidents and get an AI-narrated summary |
-| `buster db` | Create the SQLite database in `.buster` (called automatically by `setup`) |
-| `buster init` | Create the `.buster` directory and pull the Ollama model |
+| `buster save --all` | Save every `bust_*.md` file found in `.busts` |
+| `buster recall` | Search past busts and get an AI-narrated summary |
+| `buster db` | Create the SQLite database in `.busts` (called automatically by `setup`) |
+| `buster init` | Create the `.busts` directory and pull the Ollama model |
 
-### `buster bust` — Log an incident
+### `buster bust` — Log a bust
 
 ```
 $ buster bust
@@ -117,11 +118,11 @@ Did it work? (yes/no)
 We are now processing your bust report... DONE!
 We are now neatly organizing the information... DONE!
 
-Bust saved to: .buster/bust_20260530_142301_docker_daemon_not_running_in_devc.md
-Review and edit it, then run: make save FILE=<path>
+Bust saved to: .busts/bust_1748702581.md
+Review and edit it, then run: buster save <path>
 ```
 
-### `buster recall` — Search past incidents
+### `buster recall` — Search past busts
 
 ```
 $ buster recall
@@ -150,12 +151,12 @@ Make targets cover developer tooling and infrastructure that has no CLI equivale
 | `make test` | Run the full test suite |
 | `make lint` | Run ruff formatter and linter |
 | `make pre-commit` | Run all pre-commit hooks |
-| `make seed` | Seed the database with 32 example incidents |
+| `make seed` | Write 32 example bust `.md` files to `.busts/` for review |
 | `make start-model` | Start the Ollama container and pull the model |
 | `make stop-model` | Stop the Ollama container |
 | `make down` | Stop all containers |
 | `make clean` | Remove cache files and build artefacts |
-| `make clean-buster` | Remove `.buster` and all stored data |
+| `make clean-buster` | Remove `.busts` and all stored data |
 | `make full-clean` | Remove everything including `.venv` — use before a fresh `make quick-start` |
 
 ---
@@ -166,28 +167,30 @@ Make targets cover developer tooling and infrastructure that has no CLI equivale
 make test
 ```
 
-Tests that require Ollama are skipped automatically if the model is not running. The offline tests (DB, parsing, keywords, CLI) always run.
+Tests that require Ollama are skipped automatically if the model is not running. The offline tests (DB, parsing, CLI) always run.
 
 ```
 tests/
-├── conftest.py        # shared fixtures
-├── example_busts.py   # shared test data and ollama mark
-├── test_bust.py       # bust creation pipeline
-├── test_cli.py        # CLI command tests
-├── test_database.py   # database layer tests
-├── test_parse.py      # parse_md and extract_keywords unit tests
-└── test_recall.py     # search and recall pipeline tests
+├── conftest.py              # shared fixtures
+├── example_busts.py         # loads fixture files, exposes HARDCODED_MDS / AI_ENTRY / ollama mark
+├── fixtures/
+│   ├── resolved.md          # hardcoded resolved bust (Docker daemon)
+│   ├── unresolved.md        # hardcoded unresolved bust (DB connection)
+│   └── pending_processing.md  # raw entry string fed to the AI crew in Ollama tests
+├── test_bust.py             # bust creation pipeline and word filter middleware
+├── test_cli.py              # CLI command tests
+├── test_database.py         # database layer tests
+├── test_parse.py            # parse_md unit tests
+└── test_recall.py           # search and recall pipeline tests
 ```
 
 ---
 
 ## Implementation Challenges
 
-**CrewAI config not packaged on install** — `@CrewBase` resolves YAML config paths relative to the installed package location. The `config/` directory was not included in the wheel because `pyproject.toml` had no `package-data` entry, causing `FileNotFoundError` at runtime. Fixed by adding `[tool.setuptools.package-data]` to include `*.yaml` files.
+**Makefile vs CLI boundary** — The project has both a `Makefile` for developer tooling and a `buster` CLI for end-user commands. Early on the boundary was unclear, with some operations duplicated across both. The split was resolved by treating the CLI as the user-facing interface for all runtime operations (`bust`, `save`, `recall`, `setup`) and the Makefile strictly as a dev convenience layer for things with no CLI equivalent — running tests, linting, seeding data, managing containers.
 
-**CrewAI log bleed into the terminal** — CrewAI emits warnings and telemetry via Python's `logging` module. `contextlib.redirect_stderr` does not capture these because logging handlers hold a reference to the original `sys.stderr`. Fixed by calling `logging.disable(logging.WARNING)` before crew execution and restoring it in a `finally` block, alongside moving crew instantiation inside the suppression context.
-
-**pytest module identity and DB patching** — `import database` (via `sys.path`) and `from db import database` (via the installed package) produce two separate module objects. Patching one with `monkeypatch.setattr` had no effect on the other, so `search_by_tags` was reading from the wrong `DB_PATH`. Fixed by aligning all test imports to use the package path (`from db import database`).
+**Keyword-based recall limitation** — The recall system matches a user's query against stored bust tags by splitting the query into keywords and checking for overlap. This works for direct matches but struggles with synonyms, related concepts, or queries phrased differently from how the tags were generated. A semantic search approach (e.g. embedding similarity) would be more robust but was out of scope given the offline-first constraint and the model size available via Ollama.
 
 **Small model reliability** — `qwen2.5:1.5b` sometimes ignores conditional instructions (e.g. "if matches says no results, output this exact phrase"). Test assertions over LLM output phrasing were replaced with deterministic DB-layer checks, keeping only `result.raw.strip()` as the LLM guard.
 
@@ -195,14 +198,17 @@ tests/
 
 ## AI Usage
 
-This project was built with assistance from **Claude Code (Anthropic)** throughout development. All generated code was reviewed and understood by the author before being committed.
+This project was built with assistance from **Claude Code (Anthropic)** throughout development. Claude Code was involved in most phases of development — from initial planning through to final refactoring. It was used as a thinking partner as much as a code generator, and all output was reviewed and understood before being accepted.
 
 | Area | How Claude Code was used |
 |---|---|
-| Architecture & design | Debating crew separation (Buster vs Recall as independent crews), agent role definitions, and the CLI↔AI interface contract |
-| Bug investigation | Diagnosing CrewAI log bleed through `redirect_stderr`, the pytest module identity issue with `DB_PATH` patching, and the wrong empty-result string comparison in recall |
-| Test suite design | Designing the test file structure, fixture strategy (deterministic hardcoded MDs vs Ollama-gated tests), and identifying edge cases — empty queries, stop-word-only inputs, missing files, idempotent setup |
-| Optimisation debates | Discussing `DB_PATH` resolution timing (import-time vs call-time), tag search threshold behaviour, LLM output assertion strategy for a non-deterministic small model |
-| CLI design | Structuring the `buster save` multi-file interface (`--all`, multiple args, partial failure handling) and the `buster setup` idempotent flow |
-| Refactoring | Identifying duplicated logic (`visual_loading`, `extract_keywords`), dead code (`searcher` agent, vestigial `run()`), and missing package data configuration |
-| Documentation | Scaffolding the architecture diagram, implementation challenges section, and this README |
+| Design | Thinking through how to split responsibilities across agents and layers, and where to draw the line between what belongs in the AI crew vs. the CLI |
+| Framework research | Understanding how third-party libraries behave internally — e.g. why CrewAI logs couldn't be silenced with standard stream redirection, or how package data needs to be declared to survive installation |
+| Debugging | Investigating bugs where the root cause wasn't obvious — patching the wrong module object, a string comparison that never matched, telemetry output polluting the terminal |
+| Test strategy | Deciding what's worth testing, how to structure fixtures, and how to keep slow AI-dependent tests separate from fast deterministic ones |
+| Trade-off discussions | Talking through small decisions like schema columns, file naming, search thresholds, and when not to abstract |
+| Refactoring | Identifying dead code, duplication, and structural issues; discussing what to simplify vs. what to leave alone |
+| Compliance | Cross-checking the project against assignment requirements and spotting missing deliverables (e.g. git tag, CI coverage) |
+| Planning | Breaking the project into epics and tasks, and helping split work across team members in a way that minimised overlap and dependency conflicts |
+| Writing | Improving phrasing and tone throughout — commit messages, documentation, and challenge descriptions — to be clear and professional without losing the original meaning |
+| Documentation | Drafting the architecture diagram, the implementation challenges section, and this README |
